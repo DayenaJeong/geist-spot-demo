@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Spot verification demo">
+  <rect width="64" height="64" rx="12" fill="#123d5a"/>
+  <path d="M16 18h32v8H28v6h15c4 0 7 3 7 7v5c0 4-3 7-7 7H16v-8h21v-5H23c-4 0-7-3-7-7v-6c0-4 3-7 7-7Z" fill="#e8f1f8"/>
+</svg>

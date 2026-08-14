@@ -1,0 +1,10 @@
+{
+  "scene_id": "spot_switch_lamp_001",
+  "pointcloud": "scene.ply",
+  "objects_file": "objects.json",
+  "objects": [
+    {"id": "switch_A", "label": "Switch A"},
+    {"id": "switch_B", "label": "Switch B"},
+    {"id": "lamp", "label": "Lamp"}
+  ]
+}

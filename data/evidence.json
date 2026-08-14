@@ -1,0 +1,32 @@
+{
+  "schema_version": "public-interaction-evidence-1",
+  "scene_id": "spot_switch_lamp_001",
+  "human_review_status": "APPROVED",
+  "interaction_evidence": {
+    "switch_A": {
+      "source_object_id": "switch_A",
+      "target_object_id": "lamp",
+      "relation": "controls",
+      "press_success_confirmed": true,
+      "press_confidence": 0.96,
+      "lamp_before": "OFF",
+      "lamp_after": "OFF",
+      "result": "unsupported",
+      "press_contact_timestamp_sec": 3.375,
+      "after_timestamp_sec": 4.375
+    },
+    "switch_B": {
+      "source_object_id": "switch_B",
+      "target_object_id": "lamp",
+      "relation": "controls",
+      "press_success_confirmed": true,
+      "press_confidence": 0.97,
+      "lamp_before": "OFF",
+      "lamp_after": "ON",
+      "result": "verified",
+      "press_contact_timestamp_sec": 1.583,
+      "state_change_timestamp_sec": 1.583,
+      "after_timestamp_sec": 2.417
+    }
+  }
+}

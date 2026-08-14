@@ -1,0 +1,30 @@
+{
+  "objects": [
+    {"id": "switch_A", "label": "Switch A", "type": "switch", "aliases": ["switch_a", "Switch A"]},
+    {"id": "switch_B", "label": "Switch B", "type": "switch", "aliases": ["switch_b", "Switch B"]},
+    {"id": "lamp", "label": "Lamp", "type": "lamp", "aliases": ["Lamp", "light"]}
+  ],
+  "states": {
+    "INITIAL": {
+      "relations": [
+        {"id": "rel_A", "source": "switch_A", "target": "lamp", "relation": "controls", "state": "candidate"},
+        {"id": "rel_B", "source": "switch_B", "target": "lamp", "relation": "controls", "state": "candidate"}
+      ]
+    },
+    "AFTER_SWITCH_A": {
+      "relations": [
+        {"id": "rel_A", "source": "switch_A", "target": "lamp", "relation": "controls", "state": "removed"},
+        {"id": "rel_B", "source": "switch_B", "target": "lamp", "relation": "controls", "state": "candidate"}
+      ]
+    },
+    "AFTER_SWITCH_B": {
+      "relations": [
+        {"id": "rel_A", "source": "switch_A", "target": "lamp", "relation": "controls", "state": "removed"},
+        {"id": "rel_B", "source": "switch_B", "target": "lamp", "relation": "controls", "state": "verified"}
+      ]
+    }
+  },
+  "scene_manifest": "../scene/scene_manifest.json",
+  "evidence_manifest": "./evidence_manifest.json",
+  "presentation_mode": true
+}

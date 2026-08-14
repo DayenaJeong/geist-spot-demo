@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Spot functional-relation verification research demo">
+    <title>Spot Functional Relation Verification</title>
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./css/viewer.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.178.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+</head>
+
+<body>
+    <div class="app-shell" id="appShell">
+        <header class="app-header">
+            <div>
+                <p class="eyebrow">SPOT · FUNCTIONAL RELATION DEMO</p>
+                <h1>Functional Relation Verification</h1>
+                <p class="subtitle">Evidence-grounded scene graph update from physical interaction</p>
+            </div>
+            <div class="header-mark" aria-label="Spot verification demo">SPOT<br><span>LIVE DEMO</span></div>
+        </header>
+
+        <nav class="control-bar" aria-label="Verification states">
+            <div class="state-controls" role="group" aria-label="Select verification state">
+                <button type="button" class="state-button is-active" data-state="INITIAL" aria-pressed="true">
+                    Before Verification
+                </button>
+                <button type="button" class="state-button" data-state="AFTER_SWITCH_A" aria-pressed="false">
+                    After Switch A
+                </button>
+                <button type="button" class="state-button" data-state="AFTER_SWITCH_B" aria-pressed="false">
+                    After Switch B
+                </button>
+            </div>
+            <div class="utility-controls">
+                <button type="button" class="utility-button" id="autoDemoButton" aria-pressed="false">Auto Demo</button>
+                <button type="button" class="utility-button" id="resetViewButton">Reset View</button>
+            </div>
+            <div class="current-state" aria-live="polite">
+                <span class="state-dot" aria-hidden="true"></span>
+                <span id="currentStateLabel">INITIAL</span>
+            </div>
+        </nav>
+
+        <main class="workspace" aria-label="Functional graph and 3D scene">
+            <section class="panel graph-panel" aria-labelledby="graphTitle">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">STRUCTURAL HYPOTHESIS</p>
+                        <h2 id="graphTitle">Functional Scene Graph</h2>
+                    </div>
+                    <span class="panel-tag">3 OBJECTS · 2 RELATIONS</span>
+                </div>
+                <div id="network" class="network-container" aria-label="Interactive functional scene graph"></div>
+            </section>
+
+            <section class="panel scene-panel" aria-labelledby="sceneTitle">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">SPATIAL CONTEXT</p>
+                        <h2 id="sceneTitle">3D Scene Explorer</h2>
+                    </div>
+                    <span class="panel-tag" id="sceneModeTag">EMPTY DATA MODE</span>
+                </div>
+                <div class="scene-stage">
+                    <div id="sceneCanvas" class="scene-canvas" aria-label="Three-dimensional scene viewer"></div>
+                    <div id="scenePlaceholder" class="scene-placeholder">
+                        <span class="placeholder-icon" aria-hidden="true">◌</span>
+                        <strong>3D scene data not loaded</strong>
+                        <span>Provide a real Spot PLY and bounding-box manifest when available.</span>
+                    </div>
+                    <div class="scene-help">Drag to orbit · Scroll to zoom · Click an object to select</div>
+                </div>
+            </section>
+        </main>
+
+        <section class="evidence-panel" id="evidencePanel" aria-labelledby="evidenceTitle">
+            <div class="evidence-heading">
+                <p class="panel-kicker">PHYSICAL EVIDENCE</p>
+                <h2 id="evidenceTitle">Verification record</h2>
+            </div>
+            <div class="evidence-content" id="evidenceContent" aria-live="polite"></div>
+            <div class="transition-message" id="transitionMessage" aria-live="polite"></div>
+        </section>
+
+        <section class="media-region" id="mediaRegion" hidden aria-label="Recorded video evidence">
+            <div class="media-heading">
+                <p class="panel-kicker">RECORDED VIDEO EVIDENCE</p>
+                <label for="mediaMode">Layout</label>
+                <select id="mediaMode">
+                    <option value="pair">External + corrected onboard</option>
+                    <option value="graph-3d">Graph + 3D</option>
+                    <option value="external">External supporting clip</option>
+                    <option value="onboard">Corrected onboard clip</option>
+                </select>
+            </div>
+            <div class="media-grid" id="mediaGrid"></div>
+        </section>
+
+        <footer class="app-footer">
+            <span>FunFact-derived visualization core · recorded evidence presentation</span>
+            <span id="selectionStatus">No object selected</span>
+        </footer>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+
+</html>

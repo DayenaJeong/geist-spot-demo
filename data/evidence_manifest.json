@@ -1,0 +1,26 @@
+{
+  "schema_version": "public-presentation-evidence-1",
+  "mode": "recorded",
+  "presentation_mode": true,
+  "development_mode": false,
+  "evidence_json": "evidence.json",
+  "states": {
+    "INITIAL": {"label": "Before Verification", "media": []},
+    "AFTER_SWITCH_A": {
+      "label": "After Switch A",
+      "evidence_key": "switch_A",
+      "media": [
+        {"key": "external", "label": "External · Switch A", "source": "../media/switch_A_external.mp4", "autoplay": false},
+        {"key": "onboard", "label": "Corrected onboard · Switch A", "source": "../media/switch_A_onboard.mp4", "autoplay": true}
+      ]
+    },
+    "AFTER_SWITCH_B": {
+      "label": "After Switch B",
+      "evidence_key": "switch_B",
+      "media": [
+        {"key": "external", "label": "External · Switch B", "source": "../media/switch_B_external.mp4", "autoplay": false},
+        {"key": "onboard", "label": "Corrected onboard · Switch B", "source": "../media/switch_B_onboard.mp4", "autoplay": true}
+      ]
+    }
+  }
+}
