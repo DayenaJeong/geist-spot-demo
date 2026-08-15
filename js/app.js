@@ -96,7 +96,7 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
     }
     mediaMode.addEventListener("change", applyLayout);
     return {
-        render(items, { autoplay = false } = {}) {
+        render(items, { autoplay = false, playAll = false } = {}) {
             mediaGrid.innerHTML = "";
             if (!items || items.length === 0) {
                 mediaRegion.hidden = true;
@@ -112,14 +112,15 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
                 const title = document.createElement("span");
                 title.textContent = item.label;
                 const video = document.createElement("video");
+                const shouldAutoplay = autoplay && (item.autoplay || playAll);
                 const hideControls = document.body.dataset.presentationMode === "true" && document.body.dataset.autoDemo === "true" && autoplay;
                 video.controls = !hideControls;
-                video.preload = autoplay && item.autoplay ? "auto" : "metadata";
+                video.preload = shouldAutoplay ? "auto" : "metadata";
                 video.playsInline = true;
                 video.src = item.source;
                 wrapper.append(title, video);
                 mediaGrid.appendChild(wrapper);
-                if (autoplay && item.autoplay) {
+                if (shouldAutoplay) {
                     video.muted = true;
                     let resolved = false;
                     const playbackPromise = new Promise(resolve => {

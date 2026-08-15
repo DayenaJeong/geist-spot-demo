@@ -166,14 +166,14 @@ export class StateController {
         return key ? this.evidenceManifest.evidence?.interaction_evidence?.[key] || null : null;
     }
 
-    renderMedia(stateName, { autoplay = false } = {}) {
+    renderMedia(stateName, { autoplay = false, playAll = false } = {}) {
         if (!this.media) return;
         const stateRecord = this.evidenceManifest?.states?.[stateName];
         const items = (stateRecord?.media || []).map(item => ({ ...item, source: resolveAssetUrl(item.source, this.evidenceManifest.__sourceUrl) }));
-        return this.media.render(items, { autoplay });
+        return this.media.render(items, { autoplay, playAll });
     }
 
-    playEvidence(stateName) { return this.renderMedia(stateName, { autoplay: true }); }
+    playEvidence(stateName) { return this.renderMedia(stateName, { autoplay: true, playAll: true }); }
 
     startAutoDemo() {
         this.stopAutoDemo({ resetButton: false });
