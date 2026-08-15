@@ -83,7 +83,7 @@ export class StateController {
         });
     }
 
-    onObjectSelected(objectId, { source, focus = false } = {}) {
+    onObjectSelected(objectId, { source, focus = false, preserveView = false } = {}) {
         if (!objectId) {
             this.clearSelection();
             return;
@@ -92,7 +92,7 @@ export class StateController {
         const object = this.data.objectById.get(normalizedId);
         if (!object) return;
         this.selectedObjectId = normalizedId;
-        this.applySelection({ focus: focus || source === "graph" });
+        this.applySelection({ focus: focus || source === "graph", preserveView });
         this.elements.selectionStatus.textContent = `Selected: ${object.label}`;
         this.updateSelectionCard(object, this.relatedObjectIds());
     }
@@ -108,12 +108,12 @@ export class StateController {
             .map(relation => relation.source === this.selectedObjectId ? relation.target : relation.source);
     }
 
-    applySelection({ focus = false } = {}) {
+    applySelection({ focus = false, preserveView = false } = {}) {
         if (!this.selectedObjectId) return;
         const related = this.relatedObjectIds();
         this.graph.selectNode(this.selectedObjectId, { focus: false });
         this.graph.highlightRelations(this.selectedObjectId);
-        this.scene.highlightObject(this.selectedObjectId, { focus });
+        this.scene.highlightObject(this.selectedObjectId, { focus, preserveView });
         this.scene.setRelatedObjects(related);
         const object = this.data.objectById.get(this.selectedObjectId);
         if (object) this.updateSelectionCard(object, related);
@@ -210,9 +210,10 @@ export class StateController {
             this.showTransition("3D scene objects unavailable");
             return;
         }
-        this.onObjectSelected("lamp", { source: "auto", focus: true });
+        this.scene.beginAutoFocusSequence?.();
+        this.onObjectSelected("lamp", { source: "auto", focus: true, preserveView: true });
         await wait(450); if (!active()) return;
-        this.onObjectSelected("switch_A", { source: "auto", focus: true });
+        this.onObjectSelected("switch_A", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;
         this.showTransition("Switch A selected · evidence playing");
         await wait(evidenceA.press_contact_timestamp_sec * 1000); if (!active()) return;
@@ -222,7 +223,7 @@ export class StateController {
         this.setState("AFTER_SWITCH_A", { fromAuto: true, preserveMedia: true });
         this.showTransition("Lamp: OFF → OFF · Switch A REMOVED");
         await wait(1250); if (!active()) return;
-        this.onObjectSelected("switch_B", { source: "auto", focus: true });
+        this.onObjectSelected("switch_B", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_B"); if (!active()) return;
         this.showTransition("Switch B selected · evidence playing");
         await wait(evidenceB.press_contact_timestamp_sec * 1000); if (!active()) return;
@@ -231,7 +232,7 @@ export class StateController {
         this.showTransition("Lamp: OFF → ON");
         await wait((evidenceB.after_timestamp_sec - evidenceB.state_change_timestamp_sec) * 1000); if (!active()) return;
         this.setState("AFTER_SWITCH_B", { fromAuto: true, preserveMedia: true });
-        this.onObjectSelected("lamp", { source: "auto", focus: true });
+        this.onObjectSelected("lamp", { source: "auto", focus: true, preserveView: true });
         this.stopAutoDemo();
         this.showTransition("Lamp selected · OFF → ON · Switch B VERIFIED");
     }

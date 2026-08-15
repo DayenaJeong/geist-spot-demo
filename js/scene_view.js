@@ -42,6 +42,7 @@ export class SceneView {
         this.pointCloud = null;
         this.animationFrame = null;
         this.cameraTween = null;
+        this.autoFocusDistance = null;
         this.defaultTarget = new THREE.Vector3(0, 0, 0);
         this.defaultPosition = new THREE.Vector3(0, 1.5, 4);
         this.sceneBounds = null;
@@ -362,11 +363,11 @@ export class SceneView {
         return match ? String(match.id) : value;
     }
 
-    highlightObject(objectId, { focus = true } = {}) {
+    highlightObject(objectId, { focus = true, preserveView = false } = {}) {
         this.activeObjectId = objectId ? String(objectId) : null;
         this.objectEntries.forEach(entry => this.updateEntryVisual(entry));
         if (!this.activeObjectId || !this.objectEntries.has(this.activeObjectId)) return;
-        if (focus) this.focusOnObject(this.objectEntries.get(this.activeObjectId));
+        if (focus) this.focusOnObject(this.objectEntries.get(this.activeObjectId), { preserveView });
     }
 
     setRelatedObjects(objectIds = []) {
@@ -427,8 +428,25 @@ export class SceneView {
         entry.hitMesh.visible = visible;
     }
 
-    focusOnObject(entry) {
+    beginAutoFocusSequence() {
         if (!this.camera || !this.controls) return;
+        this.autoFocusDistance = this.camera.position.distanceTo(this.controls.target);
+    }
+
+    focusOnObject(entry, { preserveView = false } = {}) {
+        if (!this.camera || !this.controls) return;
+        if (preserveView) {
+            const target = this.entryFocusWorld(entry);
+            const offset = this.camera.position.clone().sub(this.controls.target);
+            const currentDistance = offset.length();
+            if (currentDistance > 1e-6) {
+                const referenceDistance = this.autoFocusDistance || currentDistance;
+                const focusDistance = Math.max(this.controls.minDistance || 0.35, referenceDistance * 0.58);
+                const position = target.clone().add(offset.normalize().multiplyScalar(focusDistance));
+                this.flyTo(position, target);
+            }
+            return;
+        }
         if (entry.camera?.position && entry.camera?.target) {
             this.applyCameraFov(entry.camera.fov);
             this.flyTo(this.toVector(entry.camera.position, this.camera.position), this.toVector(entry.camera.target, this.controls.target));
