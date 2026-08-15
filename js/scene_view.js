@@ -49,6 +49,7 @@ export class SceneView {
         this.pointCloudMetrics = null;
         this.pointCloudBaseColors = null;
         this.lampPointMask = null;
+        this.lampHighlightCloud = null;
         this.lampState = "OFF";
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
@@ -923,6 +924,40 @@ export class SceneView {
         this.applyLampStateVisual();
     }
 
+    createLampHighlightCloud(mask) {
+        if (!this.pointCloud || this.lampHighlightCloud || !mask) return;
+        const positions = this.pointCloud.geometry.attributes.position;
+        let count = 0;
+        for (let index = 0; index < mask.length; index += 1) if (mask[index]) count += 1;
+        if (!count) return;
+        const highlightPositions = new Float32Array(count * 3);
+        let writeIndex = 0;
+        for (let index = 0; index < mask.length; index += 1) {
+            if (!mask[index]) continue;
+            highlightPositions[writeIndex * 3] = positions.getX(index);
+            highlightPositions[writeIndex * 3 + 1] = positions.getY(index);
+            highlightPositions[writeIndex * 3 + 2] = positions.getZ(index);
+            writeIndex += 1;
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(highlightPositions, 3));
+        const basePointSize = this.pointCloudMetrics?.pointSize || 0.002;
+        const material = new THREE.PointsMaterial({
+            size: Math.max(basePointSize * 2.8, 0.0055),
+            color: 0xffc857,
+            transparent: true,
+            opacity: 0.98,
+            depthWrite: false,
+            depthTest: false,
+            sizeAttenuation: true
+        });
+        this.lampHighlightCloud = new THREE.Points(geometry, material);
+        this.lampHighlightCloud.name = "lamp-existing-point-samples";
+        this.lampHighlightCloud.renderOrder = 12;
+        this.lampHighlightCloud.visible = false;
+        this.worldRoot.add(this.lampHighlightCloud);
+    }
+
     buildLampPointMask(entry) {
         if (!this.pointCloud || !entry) return null;
         const positions = this.pointCloud.geometry.attributes.position;
@@ -953,6 +988,8 @@ export class SceneView {
         const mask = this.lampPointMask?.length === colors.count ? this.lampPointMask : this.buildLampPointMask(entry);
         if (!mask) return;
         const isOn = this.lampState === "ON";
+        this.createLampHighlightCloud(mask);
+        if (this.lampHighlightCloud) this.lampHighlightCloud.visible = isOn;
         const warm = [1.0, 0.72, 0.22];
         const blend = isOn ? 0.72 : 0;
         let affected = 0;
@@ -970,6 +1007,7 @@ export class SceneView {
         colors.needsUpdate = true;
         this.pointCloud.userData.lampState = this.lampState;
         this.pointCloud.userData.lampPointCount = affected;
+        this.modeTag.textContent = `SCENE DATA READY · LAMP ${this.lampState}`;
     }
 
     computePointSize(geometry) {
@@ -1016,6 +1054,7 @@ export class SceneView {
         this.pointCloud = null;
         this.pointCloudBaseColors = null;
         this.lampPointMask = null;
+        this.lampHighlightCloud = null;
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
         this.worldRoot.children.filter(child => child !== this.debugRoot).forEach(child => {
