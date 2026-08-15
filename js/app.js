@@ -4,8 +4,8 @@
 
 import { loadDemoData, loadEvidenceManifest, loadSceneManifest } from "./data_adapter.js";
 import { GraphView } from "./graph_view.js";
-import { SceneView } from "./scene_view.js";
-import { StateController } from "./state_controller.js?v=preserve-view-20260815";
+import { SceneView } from "./scene_view.js?v=auto-focus-20260815-final";
+import { StateController } from "./state_controller.js?v=auto-focus-20260815-final";
 import { setupAnnotationMode } from "./annotation_mode.js";
 
 import { installCameraCapture } from "./camera_capture.js";
