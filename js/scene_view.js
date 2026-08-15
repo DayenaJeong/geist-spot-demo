@@ -441,11 +441,15 @@ export class SceneView {
     updateStatusLabelPosition(entry) {
         if (!entry.statusLabel) return;
         const label = entry.statusLabel;
-        const maxExtent = Math.max(entry.extent.x, entry.extent.y, entry.extent.z);
-        const width = Math.max(maxExtent * 2.4, 0.2);
+        // Keep all presentation labels visually consistent, independent of bbox size.
+        const width = 0.62;
         const height = width * (label.userData.canvas.height / label.userData.canvas.width);
         label.position.copy(entry.anchorLocal);
-        label.position.y += Math.max(entry.extent.y * 0.72, 0.065);
+        const topGap = height * 0.58 + 0.035;
+        label.position.y = Math.max(
+            entry.anchorLocal.y + entry.extent.y * 0.5 + topGap,
+            entry.extent.y * 0.5 + topGap
+        );
         label.scale.set(width, height, 1);
     }
 
@@ -458,15 +462,32 @@ export class SceneView {
         label.userData.text = text || "";
         label.userData.hasText = Boolean(text);
         if (text) {
+            const left = 14;
+            const top = 14;
+            const width = canvas.width - 28;
+            const height = canvas.height - 28;
+            const radius = 28;
+            context.save();
+            context.shadowColor = "rgba(12, 28, 42, 0.24)";
+            context.shadowBlur = 18;
+            context.shadowOffsetY = 7;
             context.fillStyle = background;
             context.globalAlpha = 0.94;
-            context.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
+            context.beginPath();
+            context.roundRect(left, top, width, height, radius);
+            context.fill();
+            context.shadowColor = "transparent";
+            context.globalAlpha = 0.22;
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = 3;
+            context.stroke();
             context.globalAlpha = 1;
             context.fillStyle = foreground;
-            context.font = "700 52px Arial, sans-serif";
+            context.font = "700 44px Arial, sans-serif";
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+            context.fillText(text, canvas.width / 2, canvas.height / 2 + 1);
+            context.restore();
         }
         label.userData.texture.needsUpdate = true;
         this.updateStatusLabelPosition(entry);
