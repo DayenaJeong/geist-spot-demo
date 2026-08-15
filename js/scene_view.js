@@ -113,6 +113,7 @@ export class SceneView {
         this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
         this.transformControls.visible = false;
         this.transformControls.setSpace("local");
+        this.transformControls.setSize(0.55);
         this.transformControls.addEventListener("dragging-changed", event => {
             if (this.annotationController?.onTransformDragging) this.annotationController.onTransformDragging(event.value);
             this.setOrbitEnabled(!event.value);
@@ -300,6 +301,11 @@ export class SceneView {
         this.updateEntryVisual(entry);
     }
 
+    getMarkerRadius(extent) {
+        const maxExtent = Math.max(extent.x, extent.y, extent.z);
+        return THREE.MathUtils.clamp(maxExtent * 0.035, 0.004, 0.012);
+    }
+
     createBoxVisual(objectId, objectName, localVertices, localAnchor, baseColor, extent) {
         const edgeVertices = [];
         BOX_EDGES.forEach(([start, end]) => edgeVertices.push(localVertices[start], localVertices[end]));
@@ -315,7 +321,7 @@ export class SceneView {
         hitMesh.renderOrder = 17;
         hitMesh.userData = { objectId, objectName, wireframe };
 
-        const markerRadius = Math.max(Math.max(extent.x, extent.y, extent.z) * 0.075, 0.025);
+        const markerRadius = this.getMarkerRadius(extent);
         const markerGeometry = new THREE.SphereGeometry(markerRadius, 8, 6);
         const markerMaterial = new THREE.MeshBasicMaterial({ color: baseColor, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false });
         const cornerMarkers = new THREE.Group();
@@ -324,6 +330,7 @@ export class SceneView {
             const marker = new THREE.Mesh(markerGeometry, markerMaterial.clone());
             marker.position.copy(vertex);
             marker.userData.objectId = objectId;
+            marker.userData.baseRadius = markerRadius;
             cornerMarkers.add(marker);
         });
         cornerMarkers.renderOrder = 22;
@@ -331,6 +338,7 @@ export class SceneView {
         const anchorMarker = new THREE.Mesh(new THREE.SphereGeometry(markerRadius * 1.35, 10, 8), new THREE.MeshBasicMaterial({ color: baseColor, transparent: true, opacity: 1, depthWrite: false, depthTest: false }));
         anchorMarker.position.copy(localAnchor);
         anchorMarker.userData.objectId = objectId;
+        anchorMarker.userData.baseRadius = markerRadius * 1.35;
         anchorMarker.renderOrder = 23;
         const anchorGuide = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), localAnchor]), new THREE.LineBasicMaterial({ color: baseColor, transparent: true, opacity: 0.4, depthWrite: false, depthTest: false }));
         anchorGuide.renderOrder = 19;
@@ -539,6 +547,7 @@ export class SceneView {
         this.transformMode = mode === "resize" ? "scale" : mode === "rotate" ? "rotate" : "translate";
         this.transformControls.setMode(this.transformMode);
         this.transformControls.setSpace("local");
+        this.transformControls.setSize(0.55);
         if (this.transformMode === "rotate" && this.transformControls.setAxis) this.transformControls.setAxis("Y");
         if (this.transformMode !== "rotate" && this.transformControls.setAxis) this.transformControls.setAxis(null);
         this.transformControls.attach(entry.group);
@@ -691,10 +700,11 @@ export class SceneView {
         entry.wireframe.geometry = new THREE.BufferGeometry().setFromPoints(edgeVertices);
         entry.hitMesh.geometry.dispose();
         entry.hitMesh.geometry = new ConvexGeometry(localVertices);
-        const markerRadius = Math.max(Math.max(extent.x, extent.y, extent.z) * 0.075, 0.025);
+        const markerRadius = this.getMarkerRadius(extent);
+        entry.anchorMarker.scale.setScalar((markerRadius * 1.35) / (entry.anchorMarker.userData.baseRadius || markerRadius * 1.35));
         entry.cornerMarkers.children.forEach((marker, index) => {
             marker.position.copy(localVertices[index]);
-            marker.scale.setScalar(markerRadius / 0.025);
+            marker.scale.setScalar(markerRadius / (marker.userData.baseRadius || markerRadius));
         });
     }
 

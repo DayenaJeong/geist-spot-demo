@@ -27,7 +27,7 @@ export function setupAnnotationMode({ data, scene }) {
             <button type="button" data-action="reload">Reload Saved</button>
         </div>
         <p class="annotation-instructions" data-annotation-instructions>Choose Move, then drag the selected box gizmo. Draw Box creates a depth-filtered seed from a screen rectangle.</p>
-        <details class="annotation-advanced"><summary>Advanced numeric adjustment</summary>
+        <details class="annotation-advanced" open><summary>Advanced numeric adjustment · 0.001 m precision</summary>
             <div class="annotation-controls">
                 <fieldset><legend>Box center</legend><label>X <input data-field="cx" type="number" step="0.001"></label><label>Y <input data-field="cy" type="number" step="0.001"></label><label>Z <input data-field="cz" type="number" step="0.001"></label></fieldset>
                 <fieldset><legend>Extent</legend><label>X <input data-field="ex" type="number" min="0.001" step="0.001"></label><label>Y <input data-field="ey" type="number" min="0.001" step="0.001"></label><label>Z <input data-field="ez" type="number" min="0.001" step="0.001"></label></fieldset>
