@@ -7,18 +7,43 @@
     "enabled": true,
     "source_up_axis": "Y",
     "target_up_axis": "Y",
-    "quaternion": [0, 0, 0, 1],
-    "translation": [0, 0, 0],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "translation": [
+      0,
+      0,
+      0
+    ],
     "floor_y": -0.5237,
     "room_median_y": -0.1833,
-    "floor_normal_source": [0, 1, 0],
-    "floor_normal_target": [0, 1, 0],
+    "floor_normal_source": [
+      0,
+      1,
+      0
+    ],
+    "floor_normal_target": [
+      0,
+      1,
+      0
+    ],
     "floor_detection": "PLY normal field dominant horizontal plane band"
   },
   "camera": {
     "demo_area": {
-      "target": [-1.25, 0.38, -1.55],
-      "position": [2.35, 1.55, -5.25],
+      "target": [
+        -1.25,
+        0.38,
+        -1.55
+      ],
+      "position": [
+        2.35,
+        1.55,
+        -5.25
+      ],
       "fov": 40
     },
     "transition_ms": 720,
@@ -26,21 +51,57 @@
   },
   "objects": {
     "switch_A": {
-      "anchor": [-0.025, 0.485, -3.425],
-      "focus": [-0.025, 0.485, -3.425],
-      "camera_offset": [1.25, 0.72, -2.1],
+      "anchor": [
+        -1.6974955675789032,
+        0.2928466480664678,
+        -1.9761221509045468
+      ],
+      "focus": [
+        -1.6974955675789032,
+        0.2928466480664678,
+        -1.9761221509045468
+      ],
+      "camera_offset": [
+        1.25,
+        0.72,
+        -2.1
+      ],
       "display_color": "#3f8fc4"
     },
     "switch_B": {
-      "anchor": [-0.00801436, 0.346526296, -3.634467217],
-      "focus": [-0.00801436, 0.346526296, -3.634467217],
-      "camera_offset": [1.25, 0.72, -2.1],
+      "anchor": [
+        -1.5232401356668428,
+        0.2961668950570329,
+        -2.042241678970009
+      ],
+      "focus": [
+        -1.5232401356668428,
+        0.2961668950570329,
+        -2.042241678970009
+      ],
+      "camera_offset": [
+        1.25,
+        0.72,
+        -2.1
+      ],
       "display_color": "#3f8fc4"
     },
     "lamp": {
-      "anchor": [-2.5, 0.3, 0.4],
-      "focus": [-2.5, 0.3, 0.4],
-      "camera_offset": [1.55, 1.0, -2.55],
+      "anchor": [
+        -2.426073992734995,
+        0.7406496903077936,
+        -1.0000545912100312
+      ],
+      "focus": [
+        -2.426073992734995,
+        0.7406496903077936,
+        -1.0000545912100312
+      ],
+      "camera_offset": [
+        1.55,
+        1.0,
+        -2.55
+      ],
       "display_color": "#d49a2a"
     }
   }

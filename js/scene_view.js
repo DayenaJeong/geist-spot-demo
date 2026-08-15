@@ -256,17 +256,28 @@ export class SceneView {
         const objectId = this.resolveObjectId(record.id, objectMetadata);
         const vertices = record.vertices.map(vertex => new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
         const objectPresentation = this.presentation.objects?.[objectId] || {};
-        const center = new THREE.Box3().setFromPoints(vertices).getCenter(new THREE.Vector3());
-        const extent = new THREE.Box3().setFromPoints(vertices).getSize(new THREE.Vector3());
+        const recordCenter = this.toVector(record.center, null);
+        const recordExtent = this.toVector(record.extent, null);
+        const recordRotation = Array.isArray(record.rotation) && record.rotation.length === 3
+            ? record.rotation.map(value => Number(value) || 0)
+            : [0, 0, 0];
+        const yaw = Number(recordRotation[1] || recordRotation[2] || 0);
+        const center = recordCenter || new THREE.Box3().setFromPoints(vertices).getCenter(new THREE.Vector3());
+        const extent = recordExtent || new THREE.Box3().setFromPoints(vertices).getSize(new THREE.Vector3());
         const anchorPoint = this.toVector(objectPresentation.anchor, center);
         const focusPoint = this.toVector(objectPresentation.focus, center);
         const cameraOffset = this.toVector(objectPresentation.camera_offset, null);
+        const yawRadians = THREE.MathUtils.degToRad(yaw);
+        const inverseYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -yawRadians);
+        const localVertices = vertices.map(vertex => vertex.clone().sub(center).applyQuaternion(inverseYaw));
+        const localAnchor = anchorPoint.clone().sub(center).applyQuaternion(inverseYaw);
+        const localFocus = focusPoint.clone().sub(center).applyQuaternion(inverseYaw);
         const baseColor = this.parseColor(record.color_metadata || objectPresentation.display_color || (objectId === "lamp" ? DEFAULT_LAMP_COLOR : DEFAULT_SWITCH_COLOR));
         const group = new THREE.Group();
         group.name = `${objectId}-bbox-editable`;
         group.position.copy(center);
-        const localVertices = vertices.map(vertex => vertex.clone().sub(center));
-        const visual = this.createBoxVisual(objectId, record.name || record.label || objectId, localVertices, anchorPoint.clone().sub(center), baseColor, extent);
+        group.rotation.set(0, yawRadians, 0);
+        const visual = this.createBoxVisual(objectId, record.name || record.label || objectId, localVertices, localAnchor, baseColor, extent);
         Object.values(visual).forEach(object => group.add(object));
         this.worldRoot.add(group);
         this.raycastObjects.push(visual.hitMesh);
@@ -283,14 +294,14 @@ export class SceneView {
             baseLocalVertices: localVertices.map(vertex => vertex.clone()),
             center,
             extent,
-            anchorLocal: anchorPoint.clone().sub(center),
-            focusLocal: focusPoint.clone().sub(center),
+            anchorLocal: localAnchor,
+            focusLocal: localFocus,
             anchorPoint,
             focusPoint,
             cameraOffset,
             camera: objectPresentation.camera || null,
             originalColor: baseColor,
-            annotation: { center: center.toArray(), extent: extent.toArray(), rotation: [0, 0, 0] },
+            annotation: { center: center.toArray(), extent: extent.toArray(), rotation: [0, yaw, 0] },
             presentation: { anchor: anchorPoint.toArray(), focus: focusPoint.toArray(), cameraOffset: cameraOffset?.toArray() || null, camera: objectPresentation.camera || null },
             visible: this.showBoundingBoxes
         };
@@ -668,9 +679,9 @@ export class SceneView {
         if (!entry) return false;
         const center = new THREE.Vector3(...annotation.center);
         const extent = new THREE.Vector3(...annotation.extent).max(new THREE.Vector3(0.001, 0.001, 0.001));
-        const yaw = Number(annotation.rotation?.[2]) || 0;
-        const sourceVertices = boxVertices({ center: center.toArray(), extent: extent.toArray(), rotation: [0, 0, yaw] }).map(point => new THREE.Vector3(...point));
-        const localVertices = sourceVertices.map(point => point.clone().sub(center));
+        const yaw = Number(annotation.rotation?.[1] || annotation.rotation?.[2]) || 0;
+        const localVertices = boxVertices({ center: [0, 0, 0], extent: extent.toArray(), rotation: [0, 0, 0] }).map(point => new THREE.Vector3(...point));
+        const sourceVertices = localVertices.map(point => point.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(yaw)).add(center));
         this.replaceBoxGeometry(entry, localVertices, extent);
         entry.group.position.copy(center);
         entry.group.rotation.set(0, THREE.MathUtils.degToRad(yaw), 0);
@@ -713,7 +724,12 @@ export class SceneView {
         const matrix = entry.group.matrix;
         entry.vertices = entry.baseLocalVertices.map(vertex => vertex.clone().applyMatrix4(matrix));
         entry.center.copy(entry.group.position);
-        entry.extent.copy(new THREE.Box3().setFromPoints(entry.vertices).getSize(new THREE.Vector3()));
+        const localSize = new THREE.Box3().setFromPoints(entry.baseLocalVertices).getSize(new THREE.Vector3());
+        entry.extent.set(
+            localSize.x * Math.abs(entry.group.scale.x),
+            localSize.y * Math.abs(entry.group.scale.y),
+            localSize.z * Math.abs(entry.group.scale.z)
+        );
         entry.annotation = { center: entry.center.toArray(), extent: entry.extent.toArray(), rotation: [0, THREE.MathUtils.radToDeg(entry.group.rotation.y), 0] };
         entry.anchorPoint.copy(entry.anchorLocal).applyMatrix4(matrix);
         entry.focusPoint.copy(entry.focusLocal).applyMatrix4(matrix);
@@ -991,7 +1007,7 @@ export class SceneView {
 function boxVertices(annotation) {
     const [cx, cy, cz] = annotation.center;
     const [sx, sy, sz] = annotation.extent.map(value => value / 2);
-    const yaw = (annotation.rotation?.[2] || 0) * Math.PI / 180;
+    const yaw = (annotation.rotation?.[1] || annotation.rotation?.[2] || 0) * Math.PI / 180;
     const local = [[-sx, -sy, -sz], [sx, -sy, -sz], [-sx, sy, -sz], [-sx, -sy, sz], [sx, sy, sz], [-sx, sy, sz], [sx, sy, -sz], [sx, -sy, sz]];
-    return local.map(([x, y, z]) => [cx + x * Math.cos(yaw) - y * Math.sin(yaw), cy + x * Math.sin(yaw) + y * Math.cos(yaw), cz + z]);
+    return local.map(([x, y, z]) => [cx + x * Math.cos(yaw) + z * Math.sin(yaw), cy + y, cz - x * Math.sin(yaw) + z * Math.cos(yaw)]);
 }

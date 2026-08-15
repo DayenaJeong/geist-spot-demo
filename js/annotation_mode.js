@@ -69,7 +69,7 @@ export function setupAnnotationMode({ data, scene }) {
         const bbox = annotation.bbox;
         [fields.cx.value, fields.cy.value, fields.cz.value] = bbox.center.map(value => Number(value).toFixed(6));
         [fields.ex.value, fields.ey.value, fields.ez.value] = bbox.extent.map(value => Number(value).toFixed(6));
-        fields.yaw.value = String(Number(bbox.rotation?.[2] || 0).toFixed(3));
+        fields.yaw.value = String(Number(bbox.rotation?.[1] || bbox.rotation?.[2] || 0).toFixed(3));
         [fields.ax.value, fields.ay.value, fields.az.value] = annotation.anchor.map(value => Number(value).toFixed(6));
         [fields.fx.value, fields.fy.value, fields.fz.value] = annotation.focus.map(value => Number(value).toFixed(6));
         const offset = annotation.cameraOffset || [0, 0, 0];
