@@ -182,6 +182,7 @@ export class StateController {
         this.elements.autoDemoButton.textContent = "Stop Auto Demo";
         this.elements.autoDemoButton.setAttribute("aria-pressed", "true");
         this.setState("INITIAL", { fromAuto: true, preserveMedia: true });
+        this.onObjectSelected("lamp", { source: "auto" });
         const evidenceA = this.recordedEvidence("AFTER_SWITCH_A");
         const evidenceB = this.recordedEvidence("AFTER_SWITCH_B");
         if (!evidenceA || !evidenceB) {
@@ -197,8 +198,9 @@ export class StateController {
         const active = () => this.autoRunning && token === this.autoRunToken;
         const wait = delay => new Promise(resolve => window.setTimeout(resolve, delay));
         await wait(450); if (!active()) return;
+        this.onObjectSelected("switch_A", { source: "auto" });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;
-        this.showTransition("Switch A evidence playing");
+        this.showTransition("Switch A selected · evidence playing");
         await wait(evidenceA.press_contact_timestamp_sec * 1000); if (!active()) return;
         this.showTransition("Successful press · Switch A");
         await wait((evidenceA.after_timestamp_sec - evidenceA.press_contact_timestamp_sec) * 1000); if (!active()) return;
@@ -206,16 +208,18 @@ export class StateController {
         this.setState("AFTER_SWITCH_A", { fromAuto: true, preserveMedia: true });
         this.showTransition("Lamp: OFF → OFF · Switch A REMOVED");
         await wait(1250); if (!active()) return;
+        this.onObjectSelected("switch_B", { source: "auto" });
         await this.playEvidence("AFTER_SWITCH_B"); if (!active()) return;
-        this.showTransition("Switch B evidence playing");
+        this.showTransition("Switch B selected · evidence playing");
         await wait(evidenceB.press_contact_timestamp_sec * 1000); if (!active()) return;
         this.showTransition("Successful press · Switch B");
         await wait((evidenceB.state_change_timestamp_sec - evidenceB.press_contact_timestamp_sec) * 1000); if (!active()) return;
         this.showTransition("Lamp: OFF → ON");
         await wait((evidenceB.after_timestamp_sec - evidenceB.state_change_timestamp_sec) * 1000); if (!active()) return;
         this.setState("AFTER_SWITCH_B", { fromAuto: true, preserveMedia: true });
+        this.onObjectSelected("lamp", { source: "auto" });
         this.stopAutoDemo();
-        this.showTransition("Lamp: OFF → ON · Switch B VERIFIED");
+        this.showTransition("Lamp selected · OFF → ON · Switch B VERIFIED");
     }
 
     stopAutoDemo({ resetButton = true } = {}) {
