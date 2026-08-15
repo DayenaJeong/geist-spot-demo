@@ -47,6 +47,9 @@ export class SceneView {
         this.defaultPosition = new THREE.Vector3(0, 1.5, 4);
         this.sceneBounds = null;
         this.pointCloudMetrics = null;
+        this.pointCloudBaseColors = null;
+        this.lampPointMask = null;
+        this.lampState = "OFF";
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
         this.showBoundingBoxes = true;
@@ -162,6 +165,7 @@ export class SceneView {
         boundingBoxes.forEach(record => this.createBoundingBox(record, objectMetadata));
         await pointCloudPromise;
         this.applyWorldAlignment();
+        this.applyLampStateVisual();
 
         if (!this.hasPointCloud && !this.hasBoundingBoxes) {
             this.setStatus("3D scene data not loaded");
@@ -218,10 +222,21 @@ export class SceneView {
                 geometry.computeBoundingBox();
                 geometry.computeBoundingSphere();
                 const pointSize = this.computePointSize(geometry);
+                const colorAttribute = geometry.attributes.color;
+                if (colorAttribute) {
+                    this.pointCloudBaseColors = new Float32Array(colorAttribute.count * 3);
+                    for (let index = 0; index < colorAttribute.count; index += 1) {
+                        this.pointCloudBaseColors[index * 3] = colorAttribute.getX(index);
+                        this.pointCloudBaseColors[index * 3 + 1] = colorAttribute.getY(index);
+                        this.pointCloudBaseColors[index * 3 + 2] = colorAttribute.getZ(index);
+                    }
+                } else {
+                    this.pointCloudBaseColors = null;
+                }
                 const material = new THREE.PointsMaterial({
                     size: pointSize,
-                    vertexColors: Boolean(geometry.attributes.color),
-                    color: geometry.attributes.color ? 0xffffff : 0x6f879a,
+                    vertexColors: Boolean(colorAttribute),
+                    color: colorAttribute ? 0xffffff : 0x6f879a,
                     sizeAttenuation: true
                 });
                 this.pointCloud = new THREE.Points(geometry, material);
@@ -903,6 +918,60 @@ export class SceneView {
         grid.position.set(center.x, floorY + 0.006, center.z);
     }
 
+    setLampState(state) {
+        this.lampState = String(state || "OFF").toUpperCase() === "ON" ? "ON" : "OFF";
+        this.applyLampStateVisual();
+    }
+
+    buildLampPointMask(entry) {
+        if (!this.pointCloud || !entry) return null;
+        const positions = this.pointCloud.geometry.attributes.position;
+        const mask = new Uint8Array(positions.count);
+        const half = entry.extent.clone().multiplyScalar(0.5);
+        const center = entry.center;
+        const yaw = entry.group.rotation.y;
+        const cos = Math.cos(yaw);
+        const sin = Math.sin(yaw);
+        for (let index = 0; index < positions.count; index += 1) {
+            const dx = positions.getX(index) - center.x;
+            const dy = positions.getY(index) - center.y;
+            const dz = positions.getZ(index) - center.z;
+            const localX = dx * cos - dz * sin;
+            const localZ = dx * sin + dz * cos;
+            if (Math.abs(localX) <= half.x && Math.abs(dy) <= half.y && Math.abs(localZ) <= half.z) mask[index] = 1;
+        }
+        this.lampPointMask = mask;
+        return mask;
+    }
+
+    applyLampStateVisual() {
+        if (!this.pointCloud || !this.pointCloudBaseColors) return;
+        const entry = this.objectEntries.get("lamp");
+        if (!entry) return;
+        const colors = this.pointCloud.geometry.attributes.color;
+        if (!colors) return;
+        const mask = this.lampPointMask?.length === colors.count ? this.lampPointMask : this.buildLampPointMask(entry);
+        if (!mask) return;
+        const isOn = this.lampState === "ON";
+        const warm = [1.0, 0.72, 0.22];
+        const blend = isOn ? 0.72 : 0;
+        let affected = 0;
+        for (let index = 0; index < colors.count; index += 1) {
+            if (!mask[index]) continue;
+            const offset = index * 3;
+            colors.setXYZ(
+                index,
+                this.pointCloudBaseColors[offset] * (1 - blend) + warm[0] * blend,
+                this.pointCloudBaseColors[offset + 1] * (1 - blend) + warm[1] * blend,
+                this.pointCloudBaseColors[offset + 2] * (1 - blend) + warm[2] * blend
+            );
+            affected += 1;
+        }
+        colors.needsUpdate = true;
+        this.pointCloud.userData.lampState = this.lampState;
+        this.pointCloud.userData.lampPointCount = affected;
+    }
+
     computePointSize(geometry) {
         const extent = geometry.boundingBox?.getSize(new THREE.Vector3());
         const maxDimension = extent ? Math.max(extent.x, extent.y, extent.z) : 1;
@@ -945,6 +1014,8 @@ export class SceneView {
         this.objectEntries.clear();
         this.raycastObjects = [];
         this.pointCloud = null;
+        this.pointCloudBaseColors = null;
+        this.lampPointMask = null;
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
         this.worldRoot.children.filter(child => child !== this.debugRoot).forEach(child => {

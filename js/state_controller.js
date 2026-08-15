@@ -67,6 +67,7 @@ export class StateController {
         this.currentState = stateName;
         const state = this.data.states[stateName];
         this.currentRelations = state.relations;
+        this.scene.setLampState?.(stateName === "AFTER_SWITCH_B" ? "ON" : "OFF");
         this.graph.render(this.data.objects, state.relations);
         if (this.selectedObjectId) this.applySelection({ focus: false });
         this.updateStateControls();
