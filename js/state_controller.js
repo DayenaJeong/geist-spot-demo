@@ -182,7 +182,7 @@ export class StateController {
         this.elements.autoDemoButton.textContent = "Stop Auto Demo";
         this.elements.autoDemoButton.setAttribute("aria-pressed", "true");
         this.setState("INITIAL", { fromAuto: true, preserveMedia: true });
-        this.onObjectSelected("lamp", { source: "auto", focus: true });
+        this.showTransition("Preparing 3D object focus…");
         const evidenceA = this.recordedEvidence("AFTER_SWITCH_A");
         const evidenceB = this.recordedEvidence("AFTER_SWITCH_B");
         if (!evidenceA || !evidenceB) {
@@ -197,6 +197,20 @@ export class StateController {
     async runAutoDemoTimeline(token, evidenceA, evidenceB) {
         const active = () => this.autoRunning && token === this.autoRunToken;
         const wait = delay => new Promise(resolve => window.setTimeout(resolve, delay));
+        const waitForSceneObjects = async objectIds => {
+            const deadline = performance.now() + 8000;
+            while (active() && performance.now() < deadline) {
+                if (objectIds.every(id => this.scene.objectEntries?.has(id))) return true;
+                await wait(100);
+            }
+            return objectIds.every(id => this.scene.objectEntries?.has(id));
+        };
+        if (!(await waitForSceneObjects(["lamp", "switch_A", "switch_B"]))) {
+            this.stopAutoDemo();
+            this.showTransition("3D scene objects unavailable");
+            return;
+        }
+        this.onObjectSelected("lamp", { source: "auto", focus: true });
         await wait(450); if (!active()) return;
         this.onObjectSelected("switch_A", { source: "auto", focus: true });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;

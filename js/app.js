@@ -5,7 +5,7 @@
 import { loadDemoData, loadEvidenceManifest, loadSceneManifest } from "./data_adapter.js";
 import { GraphView } from "./graph_view.js";
 import { SceneView } from "./scene_view.js";
-import { StateController } from "./state_controller.js";
+import { StateController } from "./state_controller.js?v=90d430b";
 import { setupAnnotationMode } from "./annotation_mode.js";
 
 import { installCameraCapture } from "./camera_capture.js";
