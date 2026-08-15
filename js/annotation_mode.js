@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { setupCameraCaptureControls } from "./camera_capture_ui.js";
 
 const STORAGE_KEY = "spot-demo-manual-annotations-v2";
 
@@ -39,6 +40,7 @@ export function setupAnnotationMode({ data, scene }) {
         </details>
         <span class="annotation-status" data-annotation-status aria-live="polite"></span>`;
     document.querySelector(".app-shell").insertBefore(panel, document.querySelector(".app-footer"));
+    setupCameraCaptureControls({ panel, scene, status: panel.querySelector("[data-annotation-status]") });
 
     const select = panel.querySelector("[data-annotation-object]");
     const fields = Object.fromEntries([...panel.querySelectorAll("[data-field]")].map(input => [input.dataset.field, input]));

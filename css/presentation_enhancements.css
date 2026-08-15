@@ -117,6 +117,59 @@
     text-transform: uppercase;
 }
 
+.camera-capture-controls {
+    display: grid;
+    gap: 7px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+}
+
+.camera-capture-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 9px;
+}
+
+.camera-capture-note {
+    color: var(--ink-soft);
+    font-size: 11px;
+}
+
+.camera-capture-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.camera-capture-actions button {
+    min-height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0 9px;
+    color: var(--navy);
+    background: var(--surface);
+    font-size: 11px;
+}
+
+.camera-capture-actions button:hover,
+.camera-capture-actions button:focus-visible {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+    outline: none;
+}
+
+.camera-capture-controls textarea {
+    width: min(100%, 760px);
+    min-height: 126px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px;
+    color: var(--navy);
+    background: #f8fafc;
+    font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 .annotation-instructions {
     margin: 0;
     color: var(--ink-soft);

@@ -8,6 +8,7 @@ import { SceneView } from "./scene_view.js";
 import { StateController } from "./state_controller.js";
 import { setupAnnotationMode } from "./annotation_mode.js";
 
+import { installCameraCapture } from "./camera_capture.js";
 const DATA_URL = "./data/demo_state.json";
 
 async function main() {
@@ -28,6 +29,7 @@ async function main() {
         debugMode,
         annotationMode
     });
+    installCameraCapture(scene, { annotationMode });
     const refreshLayout = () => window.requestAnimationFrame(() => {
         graph.fit();
         scene.resize();
