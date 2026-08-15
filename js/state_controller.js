@@ -69,7 +69,12 @@ export class StateController {
         this.evidenceStage = null;
         const state = this.data.states[stateName];
         this.currentRelations = state.relations;
-        this.scene.setLampState?.(stateName === "AFTER_SWITCH_B" ? "ON" : "OFF");
+        const lampState = stateName === "AFTER_SWITCH_B" ? "ON" : "OFF";
+        this.scene.setLampState?.(lampState);
+        this.scene.setInteractionAnnotations?.({
+            switchId: stateName === "AFTER_SWITCH_A" ? "switch_A" : stateName === "AFTER_SWITCH_B" ? "switch_B" : null,
+            lampState
+        });
         this.graph.render(this.data.objects, state.relations);
         if (this.selectedObjectId) this.applySelection({ focus: false });
         this.updateStateControls();
@@ -88,6 +93,8 @@ export class StateController {
 
     setEvidenceStage(label) {
         this.evidenceStage = label;
+        const switchId = String(label || "").includes("SWITCH A") ? "switch_A" : String(label || "").includes("SWITCH B") ? "switch_B" : null;
+        this.scene.setInteractionAnnotations?.({ switchId, lampState: this.scene.lampState || "OFF" });
         this.updateStateControls();
     }
 
@@ -241,6 +248,7 @@ export class StateController {
         this.showTransition("Successful press · Switch B");
         await wait((evidenceB.state_change_timestamp_sec - evidenceB.press_contact_timestamp_sec) * 1000); if (!active()) return;
         this.showTransition("Lamp: OFF → ON");
+        this.scene.setInteractionAnnotations?.({ switchId: "switch_B", lampState: "ON" });
         await wait((evidenceB.after_timestamp_sec - evidenceB.state_change_timestamp_sec) * 1000); if (!active()) return;
         this.setState("AFTER_SWITCH_B", { fromAuto: true, preserveMedia: true });
         this.onObjectSelected("lamp", { source: "auto", focus: true, preserveView: true });

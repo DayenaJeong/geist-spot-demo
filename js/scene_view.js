@@ -51,6 +51,7 @@ export class SceneView {
         this.lampPointMask = null;
         this.lampHighlightCloud = null;
         this.lampState = "OFF";
+        this.interactionAnnotations = { switchId: null, lampState: "OFF" };
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
         this.showBoundingBoxes = true;
@@ -307,6 +308,7 @@ export class SceneView {
             cornerMarkers: visual.cornerMarkers,
             anchorMarker: visual.anchorMarker,
             anchorGuide: visual.anchorGuide,
+            statusLabel: visual.statusLabel,
             vertices,
             baseLocalVertices: localVertices.map(vertex => vertex.clone()),
             center,
@@ -323,6 +325,7 @@ export class SceneView {
             visible: this.showBoundingBoxes
         };
         this.objectEntries.set(objectId, entry);
+        this.applyInteractionLabel(entry);
         this.hasBoundingBoxes = true;
         this.modeTag.textContent = "SCENE DATA READY";
         this.updatePlaceholder();
@@ -370,7 +373,23 @@ export class SceneView {
         anchorMarker.renderOrder = 23;
         const anchorGuide = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), localAnchor]), new THREE.LineBasicMaterial({ color: baseColor, transparent: true, opacity: 0.4, depthWrite: false, depthTest: false }));
         anchorGuide.renderOrder = 19;
-        return { wireframe, fillMesh, hitMesh, cornerMarkers, anchorMarker, anchorGuide };
+        const statusLabel = this.createStatusLabel(objectId);
+        return { wireframe, fillMesh, hitMesh, cornerMarkers, anchorMarker, anchorGuide, statusLabel };
+    }
+
+    createStatusLabel(objectId) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 384;
+        canvas.height = 112;
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+        sprite.name = `${objectId}-status-label`;
+        sprite.renderOrder = 30;
+        sprite.visible = false;
+        sprite.userData = { objectId, canvas, texture, text: "", hasText: false };
+        return sprite;
     }
 
     resolveObjectId(candidate, objectMetadata) {
@@ -419,6 +438,62 @@ export class SceneView {
         });
     }
 
+    updateStatusLabelPosition(entry) {
+        if (!entry.statusLabel) return;
+        const label = entry.statusLabel;
+        const maxExtent = Math.max(entry.extent.x, entry.extent.y, entry.extent.z);
+        const width = Math.max(maxExtent * 2.4, 0.2);
+        const height = width * (label.userData.canvas.height / label.userData.canvas.width);
+        label.position.copy(entry.anchorLocal);
+        label.position.y += Math.max(entry.extent.y * 0.72, 0.065);
+        label.scale.set(width, height, 1);
+    }
+
+    updateStatusLabel(entry, text, { background = "#163b59", foreground = "#ffffff" } = {}) {
+        const label = entry.statusLabel;
+        if (!label) return;
+        const canvas = label.userData.canvas;
+        const context = canvas.getContext("2d");
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        label.userData.text = text || "";
+        label.userData.hasText = Boolean(text);
+        if (text) {
+            context.fillStyle = background;
+            context.globalAlpha = 0.94;
+            context.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
+            context.globalAlpha = 1;
+            context.fillStyle = foreground;
+            context.font = "700 52px Arial, sans-serif";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+        }
+        label.userData.texture.needsUpdate = true;
+        this.updateStatusLabelPosition(entry);
+        this.updateEntryVisual(entry);
+    }
+
+    applyInteractionLabel(entry) {
+        const annotations = this.interactionAnnotations || {};
+        if (entry.id === "lamp") {
+            const isOn = String(annotations.lampState || "OFF").toUpperCase() === "ON";
+            this.updateStatusLabel(entry, isOn ? "ON" : "OFF", isOn
+                ? { background: "#f0b429", foreground: "#17202a" }
+                : { background: "#5b6875", foreground: "#ffffff" });
+            return;
+        }
+        if (entry.id === annotations.switchId) {
+            this.updateStatusLabel(entry, "PUSH", { background: "#1976b9", foreground: "#ffffff" });
+            return;
+        }
+        this.updateStatusLabel(entry, "");
+    }
+
+    setInteractionAnnotations({ switchId = null, lampState = "OFF" } = {}) {
+        this.interactionAnnotations = { switchId: switchId ? String(switchId) : null, lampState: String(lampState || "OFF").toUpperCase() === "ON" ? "ON" : "OFF" };
+        this.objectEntries.forEach(entry => this.applyInteractionLabel(entry));
+    }
+
     updateEntryVisual(entry) {
         const selected = entry.id === this.activeObjectId;
         const related = this.relatedObjectIds.has(entry.id) && !selected;
@@ -442,6 +517,7 @@ export class SceneView {
         entry.anchorMarker.visible = visible;
         entry.anchorGuide.visible = visible;
         entry.hitMesh.visible = visible;
+        if (entry.statusLabel) entry.statusLabel.visible = visible && Boolean(entry.statusLabel.userData.hasText);
     }
 
     beginAutoFocusSequence() {
@@ -1088,6 +1164,7 @@ export class SceneView {
 
     updateAnchorVisual(entry) {
         entry.anchorMarker.position.copy(entry.anchorLocal);
+        this.updateStatusLabelPosition(entry);
         entry.anchorGuide.geometry.dispose();
         entry.anchorGuide.geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), entry.anchorLocal]);
     }
