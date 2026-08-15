@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "coordinate_frame": "scene.ply",
+  "source": "manual_real_scene_verification",
+  "camera": {
+    "demo_area": {
+      "target": [-1.25, 0.34, -1.55],
+      "position": [2.35, -5.25, 1.15],
+      "fov": 40
+    },
+    "transition_ms": 720,
+    "object_distance_scale": 2.8
+  },
+  "objects": {
+    "switch_A": {
+      "anchor": [-0.025, 0.485, -3.425],
+      "focus": [-0.025, 0.485, -3.425],
+      "camera_offset": [1.25, -2.1, 0.72],
+      "display_color": "#3f8fc4"
+    },
+    "switch_B": {
+      "anchor": [-0.00801436, 0.346526296, -3.634467217],
+      "focus": [-0.00801436, 0.346526296, -3.634467217],
+      "camera_offset": [1.25, -2.1, 0.72],
+      "display_color": "#3f8fc4"
+    },
+    "lamp": {
+      "anchor": [-2.5, 0.3, 0.4],
+      "focus": [-2.5, 0.3, 0.4],
+      "camera_offset": [1.55, -2.55, 1.0],
+      "display_color": "#d49a2a"
+    }
+  }
+}

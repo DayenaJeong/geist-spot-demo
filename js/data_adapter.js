@@ -17,6 +17,9 @@ export async function loadDemoData(dataUrl) {
     const manifestUrl = data.scene_manifest
         ? new URL(data.scene_manifest, dataBaseUrl).toString()
         : null;
+    const scenePresentationUrl = data.scene_presentation
+        ? new URL(data.scene_presentation, dataBaseUrl).toString()
+        : null;
     const evidenceManifestUrl = data.evidence_manifest
         ? new URL(data.evidence_manifest, dataBaseUrl).toString()
         : null;
@@ -28,6 +31,7 @@ export async function loadDemoData(dataUrl) {
     return {
         ...data,
         manifestUrl,
+        scenePresentationUrl,
         evidenceManifestUrl,
         presentationMode,
         objectById: new Map(data.objects.map(object => [object.id, object])),
@@ -64,10 +68,12 @@ export async function loadEvidenceManifest(manifestUrl) {
 }
 
 export async function loadSceneManifest(manifestUrl, demoData) {
+    const presentation = await loadOptionalJson(demoData.scenePresentationUrl, "scene presentation config");
     if (!manifestUrl) {
         return {
             scene_id: "empty-development-scene",
             pointcloud: null,
+            presentation,
             objects: demoData.objects.map(object => ({
                 id: object.id,
                 label: object.label,
@@ -85,14 +91,15 @@ export async function loadSceneManifest(manifestUrl, demoData) {
         const manifest = await response.json();
         return {
             ...manifest,
-            __sourceUrl: manifestUrl
+            __sourceUrl: manifestUrl,
+            presentation
         };
     } catch (error) {
-        // Missing geometry must be a valid UI-development state.
         console.warn(`Scene manifest unavailable; continuing without 3D data: ${error.message}`);
         return {
             scene_id: "empty-development-scene",
             pointcloud: null,
+            presentation,
             objects: demoData.objects.map(object => ({
                 id: object.id,
                 label: object.label,
@@ -108,6 +115,22 @@ export function resolveAssetUrl(assetPath, sourceUrl) {
         return null;
     }
     return new URL(assetPath, sourceUrl).toString();
+}
+
+async function loadOptionalJson(url, label) {
+    if (!url) {
+        return null;
+    }
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`${response.status} ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.warn(`Optional ${label} unavailable; using renderer defaults: ${error.message}`);
+        return null;
+    }
 }
 
 function validateDemoData(data) {

@@ -15,37 +15,29 @@ async function main() {
     const query = new URLSearchParams(window.location.search);
     const annotationMode = query.get("annotate") === "1";
     data.annotationMode = annotationMode;
-    if (annotationMode) {
-        data.presentationMode = false;
-    }
+    if (annotationMode) data.presentationMode = false;
     document.body.dataset.presentationMode = String(data.presentationMode);
     const elements = getElements();
     const graph = new GraphView(elements.network, {
         onNodeSelected: (objectId, metadata) => controller.onObjectSelected(objectId, metadata)
     });
     const scene = new SceneView(elements.sceneCanvas, elements.scenePlaceholder, elements.sceneModeTag, {
-        onObjectSelected: (objectId, metadata) => controller.onObjectSelected(objectId, metadata)
+        onObjectSelected: (objectId, metadata) => controller.onObjectSelected(objectId, metadata),
+        onObjectHovered: objectId => controller.onObjectHovered(objectId)
     });
-    const refreshLayout = () => {
-        window.requestAnimationFrame(() => {
-            graph.fit();
-            scene.resize();
-        });
-    };
+    const refreshLayout = () => window.requestAnimationFrame(() => {
+        graph.fit();
+        scene.resize();
+    });
     const media = setupEvidenceMedia(elements, refreshLayout);
     const controller = new StateController({
-        data: {
-            ...data,
-            loadManifest: loadSceneManifest,
-            loadEvidenceManifest
-        },
+        data: { ...data, loadManifest: loadSceneManifest, loadEvidenceManifest },
         graph,
         scene,
         elements,
         media
     });
 
-    // Small inspection hook for local presentation QA; it does not affect the viewer path.
     window.__spotDemo = { controller, graph, scene };
     window.addEventListener("resize", refreshLayout, { passive: true });
     if ("ResizeObserver" in window) {
@@ -57,12 +49,8 @@ async function main() {
     }
     await controller.start();
     const requestedState = query.get("state");
-    if (requestedState && data.states[requestedState]) {
-        controller.setState(requestedState, { fromAuto: true });
-    }
-    if (data.annotationMode) {
-        setupAnnotationMode({ data, scene });
-    }
+    if (requestedState && data.states[requestedState]) controller.setState(requestedState, { fromAuto: true });
+    if (data.annotationMode) setupAnnotationMode({ data, scene });
 }
 
 function getElements() {
@@ -80,7 +68,12 @@ function getElements() {
         currentStateLabel: document.getElementById("currentStateLabel"),
         autoDemoButton: document.getElementById("autoDemoButton"),
         resetViewButton: document.getElementById("resetViewButton"),
+        focusDemoAreaButton: document.getElementById("focusDemoAreaButton"),
+        showBoxesButton: document.getElementById("showBoxesButton"),
         selectionStatus: document.getElementById("selectionStatus"),
+        sceneSelectionCard: document.getElementById("sceneSelectionCard"),
+        sceneSelectionLabel: document.getElementById("sceneSelectionLabel"),
+        sceneSelectionMeta: document.getElementById("sceneSelectionMeta"),
         mediaRegion: document.getElementById("mediaRegion"),
         mediaGrid: document.getElementById("mediaGrid"),
         mediaMode: document.getElementById("mediaMode")
@@ -89,7 +82,6 @@ function getElements() {
 
 function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
     const { mediaRegion, mediaGrid, mediaMode } = elements;
-
     function applyLayout() {
         const selectedMode = mediaMode.value;
         mediaGrid.dataset.layout = selectedMode;
@@ -97,9 +89,7 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
             panel.hidden = selectedMode === "graph-3d" || (selectedMode !== "pair" && panel.dataset.mediaKey !== selectedMode);
         });
     }
-
     mediaMode.addEventListener("change", applyLayout);
-
     return {
         render(items, { autoplay = false } = {}) {
             mediaGrid.innerHTML = "";
@@ -107,7 +97,6 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
                 mediaRegion.hidden = true;
                 return Promise.resolve();
             }
-
             mediaRegion.hidden = false;
             mediaMode.value = items.length > 1 ? "pair" : items[0].key;
             const playbackReady = [];
@@ -118,9 +107,7 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
                 const title = document.createElement("span");
                 title.textContent = item.label;
                 const video = document.createElement("video");
-                const hideControls = document.body.dataset.presentationMode === "true"
-                    && document.body.dataset.autoDemo === "true"
-                    && autoplay;
+                const hideControls = document.body.dataset.presentationMode === "true" && document.body.dataset.autoDemo === "true" && autoplay;
                 video.controls = !hideControls;
                 video.preload = autoplay && item.autoplay ? "auto" : "metadata";
                 video.playsInline = true;
@@ -143,9 +130,7 @@ function setupEvidenceMedia(elements, onLayoutChanged = () => {}) {
                     playbackReady.push(playbackPromise);
                     const startPlayback = () => video.play().then(() => {}, () => {}).catch(() => {});
                     video.addEventListener("loadedmetadata", startPlayback, { once: true });
-                    if (video.readyState >= 1) {
-                        startPlayback();
-                    }
+                    if (video.readyState >= 1) startPlayback();
                     window.setTimeout(startPlayback, 120);
                 }
             });
