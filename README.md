@@ -1,4 +1,4 @@
-# GEIST Spot Functional Graph Verification Demo
+# Spot Functional Graph Verification Demo
 
 Interactive real-robot demonstration of physical functional-relation
 verification using Spot, a 3D scene view, and evidence-grounded graph updates.

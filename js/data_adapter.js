@@ -1,5 +1,4 @@
-// Adapted from the FunFact report data contract.
-// FunFact attribution: https://github.com/funfact-scenegraph/FunFact
+// Adapter for the standalone verification-demo data contract.
 
 const REQUIRED_STATES = ["INITIAL", "AFTER_SWITCH_A", "AFTER_SWITCH_B"];
 const ALLOWED_RELATION_STATES = new Set(["candidate", "removed", "verified"]);

@@ -1,5 +1,5 @@
 // Independent state controller for the Spot verification demo.
-// The graph and scene renderers are adapted from FunFact; state transitions are new demo logic.
+// Graph and scene state transitions are specific to this verification demo.
 
 import { resolveAssetUrl } from "./data_adapter.js";
 

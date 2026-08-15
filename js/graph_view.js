@@ -1,5 +1,4 @@
-// Reused/adapted from FunFact's vis-network scene-graph renderer.
-// FunFact attribution: https://github.com/funfact-scenegraph/FunFact
+// Interactive vis-network scene-graph renderer.
 
 const NODE_COLORS = {
     background: "#e8f1f8",

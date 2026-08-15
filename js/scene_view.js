@@ -1,5 +1,4 @@
-// Reused/adapted from FunFact's Three.js point-cloud and OBB viewer.
-// FunFact attribution: https://github.com/funfact-scenegraph/FunFact
+// Three.js point-cloud and oriented-bounding-box viewer.
 
 import * as THREE from "three";
 import { ConvexGeometry } from "three/addons/geometries/ConvexGeometry.js";

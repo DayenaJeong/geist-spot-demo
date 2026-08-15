@@ -1,6 +1,5 @@
 // Standalone application entry point.
-// Graph and 3D rendering are adapted from FunFact's Interactive Scene Explorer.
-// FunFact attribution: https://github.com/funfact-scenegraph/FunFact
+// Graph and 3D rendering use a standalone Three.js scene explorer.
 
 import { loadDemoData, loadEvidenceManifest, loadSceneManifest } from "./data_adapter.js";
 import { GraphView } from "./graph_view.js";
