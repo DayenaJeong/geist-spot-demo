@@ -9,7 +9,8 @@
 .scene-selection-card {
     position: absolute;
     top: 12px;
-    left: 12px;
+    right: 12px;
+    left: auto;
     z-index: 4;
     display: grid;
     gap: 4px;
@@ -270,7 +271,8 @@
 
 body[data-presentation-mode="true"] .scene-selection-card {
     top: 8px;
-    left: 8px;
+    right: 8px;
+    left: auto;
     padding: 7px 9px;
 }
 
