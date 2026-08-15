@@ -523,8 +523,7 @@ body[data-presentation-mode="true"] {
 
 body[data-presentation-mode="true"] .app-shell {
     grid-template-rows: clamp(54px, 7.2vh, 78px) clamp(40px, 4.8vh, 52px)
-        minmax(280px, 44vh) clamp(62px, 7.6vh, 86px) minmax(180px, 1fr)
-        clamp(16px, 1.8vh, 20px);
+        minmax(280px, 44vh) minmax(180px, 1fr) clamp(16px, 1.8vh, 20px);
     gap: clamp(4px, 0.7vh, 8px);
     height: 100vh;
     min-height: 0;
@@ -608,11 +607,7 @@ body[data-presentation-mode="true"] .panel-tag {
 }
 
 body[data-presentation-mode="true"] .evidence-panel {
-    grid-template-columns: clamp(125px, 9vw, 165px) minmax(0, 1fr) minmax(180px, 0.45fr);
-    gap: clamp(8px, 1vw, 15px);
-    min-height: 0;
-    height: 100%;
-    padding: 7px clamp(10px, 1.2vw, 18px);
+    display: none;
 }
 
 body[data-presentation-mode="true"] .evidence-content {
