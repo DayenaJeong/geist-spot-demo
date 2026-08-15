@@ -13,6 +13,7 @@ export class StateController {
         this.elements = elements;
         this.media = media;
         this.currentState = "INITIAL";
+        this.evidenceStage = null;
         this.currentRelations = [];
         this.selectedObjectId = null;
         this.autoRunning = false;
@@ -65,6 +66,7 @@ export class StateController {
         if (!this.data.states[stateName]) return;
         if (!fromAuto) this.stopAutoDemo();
         this.currentState = stateName;
+        this.evidenceStage = null;
         const state = this.data.states[stateName];
         this.currentRelations = state.relations;
         this.scene.setLampState?.(stateName === "AFTER_SWITCH_B" ? "ON" : "OFF");
@@ -76,12 +78,17 @@ export class StateController {
     }
 
     updateStateControls() {
-        this.elements.currentStateLabel.textContent = STATE_LABELS[this.currentState];
+        this.elements.currentStateLabel.textContent = this.evidenceStage || STATE_LABELS[this.currentState];
         this.elements.stateButtons.forEach(button => {
-            const active = button.dataset.state === this.currentState;
+            const active = !this.evidenceStage && button.dataset.state === this.currentState;
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", String(active));
         });
+    }
+
+    setEvidenceStage(label) {
+        this.evidenceStage = label;
+        this.updateStateControls();
     }
 
     onObjectSelected(objectId, { source, focus = false, preserveView = false } = {}) {
@@ -182,7 +189,7 @@ export class StateController {
         document.body.dataset.autoDemo = "true";
         this.elements.autoDemoButton.textContent = "Stop Auto Demo";
         this.elements.autoDemoButton.setAttribute("aria-pressed", "true");
-        this.setState("INITIAL", { fromAuto: true, preserveMedia: true });
+        this.setState("INITIAL", { fromAuto: true, preserveMedia: false });
         this.showTransition("Preparing 3D object focus…");
         const evidenceA = this.recordedEvidence("AFTER_SWITCH_A");
         const evidenceB = this.recordedEvidence("AFTER_SWITCH_B");
@@ -214,6 +221,8 @@ export class StateController {
         this.scene.beginAutoFocusSequence?.();
         this.onObjectSelected("lamp", { source: "auto", focus: true, preserveView: true });
         await wait(450); if (!active()) return;
+        await wait(1200); if (!active()) return;
+        this.setEvidenceStage("SWITCH A · EVIDENCE PLAYING");
         this.onObjectSelected("switch_A", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;
         this.showTransition("Switch A selected · evidence playing");
@@ -224,6 +233,7 @@ export class StateController {
         this.setState("AFTER_SWITCH_A", { fromAuto: true, preserveMedia: true });
         this.showTransition("Lamp: OFF → OFF · Switch A REMOVED");
         await wait(1250); if (!active()) return;
+        this.setEvidenceStage("SWITCH B · EVIDENCE PLAYING");
         this.onObjectSelected("switch_B", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_B"); if (!active()) return;
         this.showTransition("Switch B selected · evidence playing");
