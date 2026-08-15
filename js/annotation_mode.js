@@ -1,12 +1,6 @@
 import * as THREE from "three";
-import { ConvexGeometry } from "three/addons/geometries/ConvexGeometry.js";
 
-const STORAGE_KEY = "spot-demo-manual-annotations-v1";
-const BOX_EDGES = [
-    [0, 1], [0, 2], [1, 7], [2, 7],
-    [3, 6], [3, 5], [4, 6], [4, 5],
-    [0, 3], [1, 6], [2, 5], [4, 7]
-];
+const STORAGE_KEY = "spot-demo-manual-annotations-v2";
 
 export function setupAnnotationMode({ data, scene }) {
     document.body.dataset.annotationMode = "true";
@@ -14,147 +8,247 @@ export function setupAnnotationMode({ data, scene }) {
     panel.className = "annotation-panel";
     panel.setAttribute("aria-label", "Manual real-scene annotation");
     panel.innerHTML = `
-        <div class="annotation-heading"><div><p class="panel-kicker">MANUAL REAL-SCENE ANNOTATION</p><h2>Editable PLY-frame presentation points</h2></div><span class="panel-tag">scene.ply coordinates</span></div>
-        <div class="annotation-controls">
-            <label>Object <select data-annotation-object></select></label>
-            <fieldset><legend>Box center</legend><label>X <input data-field="cx" type="number" step="0.001"></label><label>Y <input data-field="cy" type="number" step="0.001"></label><label>Z <input data-field="cz" type="number" step="0.001"></label></fieldset>
-            <fieldset><legend>Extent</legend><label>X <input data-field="ex" type="number" min="0.001" step="0.001"></label><label>Y <input data-field="ey" type="number" min="0.001" step="0.001"></label><label>Z <input data-field="ez" type="number" min="0.001" step="0.001"></label></fieldset>
-            <label>Yaw <input data-field="yaw" type="number" step="0.1"></label>
-            <fieldset><legend>Anchor point</legend><label>X <input data-field="ax" type="number" step="0.001"></label><label>Y <input data-field="ay" type="number" step="0.001"></label><label>Z <input data-field="az" type="number" step="0.001"></label></fieldset>
-            <fieldset><legend>Focus point</legend><label>X <input data-field="fx" type="number" step="0.001"></label><label>Y <input data-field="fy" type="number" step="0.001"></label><label>Z <input data-field="fz" type="number" step="0.001"></label></fieldset>
-            <fieldset><legend>Camera offset</legend><label>X <input data-field="ox" type="number" step="0.001"></label><label>Y <input data-field="oy" type="number" step="0.001"></label><label>Z <input data-field="oz" type="number" step="0.001"></label></fieldset>
-            <div class="annotation-actions"><button type="button" data-action="apply">Apply</button><button type="button" data-action="save">Save / download</button><button type="button" data-action="reload">Reload saved</button></div>
-            <span class="annotation-status" data-annotation-status aria-live="polite"></span>
-        </div>`;
+        <div class="annotation-heading">
+            <div><p class="panel-kicker">MANUAL REAL-SCENE ANNOTATION</p><h2>Direct point-cloud annotation</h2></div>
+            <span class="panel-tag">aligned_world · Y-up</span>
+        </div>
+        <div class="annotation-toolbar">
+            <label class="annotation-object">Object <select data-annotation-object></select></label>
+            <button type="button" data-tool="draw-box">Draw Box</button>
+            <span class="annotation-tool-label">Mode</span>
+            <button type="button" class="is-active" data-tool="move">Move</button>
+            <button type="button" data-tool="resize">Resize</button>
+            <button type="button" data-tool="rotate">Rotate</button>
+            <button type="button" data-tool="anchor">Set Anchor</button>
+            <button type="button" data-tool="focus">Set Focus</button>
+            <button type="button" data-action="camera">Save Current Camera</button>
+            <button type="button" data-action="save">Save Annotation</button>
+            <button type="button" data-action="reload">Reload Saved</button>
+        </div>
+        <p class="annotation-instructions" data-annotation-instructions>Choose Move, then drag the selected box gizmo. Draw Box creates a depth-filtered seed from a screen rectangle.</p>
+        <details class="annotation-advanced"><summary>Advanced numeric adjustment</summary>
+            <div class="annotation-controls">
+                <fieldset><legend>Box center</legend><label>X <input data-field="cx" type="number" step="0.001"></label><label>Y <input data-field="cy" type="number" step="0.001"></label><label>Z <input data-field="cz" type="number" step="0.001"></label></fieldset>
+                <fieldset><legend>Extent</legend><label>X <input data-field="ex" type="number" min="0.001" step="0.001"></label><label>Y <input data-field="ey" type="number" min="0.001" step="0.001"></label><label>Z <input data-field="ez" type="number" min="0.001" step="0.001"></label></fieldset>
+                <label>Yaw <input data-field="yaw" type="number" step="0.1"></label>
+                <fieldset><legend>Anchor point</legend><label>X <input data-field="ax" type="number" step="0.001"></label><label>Y <input data-field="ay" type="number" step="0.001"></label><label>Z <input data-field="az" type="number" step="0.001"></label></fieldset>
+                <fieldset><legend>Focus point</legend><label>X <input data-field="fx" type="number" step="0.001"></label><label>Y <input data-field="fy" type="number" step="0.001"></label><label>Z <input data-field="fz" type="number" step="0.001"></label></fieldset>
+                <fieldset><legend>Camera offset</legend><label>X <input data-field="ox" type="number" step="0.001"></label><label>Y <input data-field="oy" type="number" step="0.001"></label><label>Z <input data-field="oz" type="number" step="0.001"></label></fieldset>
+                <button type="button" data-action="apply">Apply numeric values</button>
+            </div>
+        </details>
+        <span class="annotation-status" data-annotation-status aria-live="polite"></span>`;
     document.querySelector(".app-shell").insertBefore(panel, document.querySelector(".app-footer"));
 
     const select = panel.querySelector("[data-annotation-object]");
     const fields = Object.fromEntries([...panel.querySelectorAll("[data-field]")].map(input => [input.dataset.field, input]));
     const status = panel.querySelector("[data-annotation-status]");
-    data.objects.forEach(object => {
+    const instructions = panel.querySelector("[data-annotation-instructions]");
+    const toolButtons = [...panel.querySelectorAll("[data-tool]")];
+    let tool = "move";
+    let drawStart = null;
+    let drawing = false;
+
+    (data.objects || []).forEach(object => {
         const option = document.createElement("option");
         option.value = object.id;
         option.textContent = object.label;
         select.appendChild(option);
     });
 
-    function annotationFromEntry(entry) {
-        const array = entry.wireframe.geometry.attributes.position.array;
-        const min = [Infinity, Infinity, Infinity];
-        const max = [-Infinity, -Infinity, -Infinity];
-        for (let i = 0; i < array.length; i += 3) for (let axis = 0; axis < 3; axis += 1) {
-            min[axis] = Math.min(min[axis], array[i + axis]);
-            max[axis] = Math.max(max[axis], array[i + axis]);
-        }
-        return {
-            center: min.map((value, axis) => (value + max[axis]) / 2),
-            extent: min.map((value, axis) => Math.max(max[axis] - value, 0.001)),
-            rotation: [0, 0, 0],
-            anchor: entry.anchorPoint?.toArray() || entry.center.toArray(),
-            focus: entry.focusPoint?.toArray() || entry.center.toArray(),
-            cameraOffset: entry.cameraOffset?.toArray() || [0, 0, 0]
-        };
+    function current(id = select.value) {
+        const annotation = scene.getAnnotation(id);
+        if (!annotation) return null;
+        return annotation;
+    }
+
+    function writeForm(annotation) {
+        if (!annotation) return;
+        const bbox = annotation.bbox;
+        [fields.cx.value, fields.cy.value, fields.cz.value] = bbox.center.map(value => Number(value).toFixed(6));
+        [fields.ex.value, fields.ey.value, fields.ez.value] = bbox.extent.map(value => Number(value).toFixed(6));
+        fields.yaw.value = String(Number(bbox.rotation?.[2] || 0).toFixed(3));
+        [fields.ax.value, fields.ay.value, fields.az.value] = annotation.anchor.map(value => Number(value).toFixed(6));
+        [fields.fx.value, fields.fy.value, fields.fz.value] = annotation.focus.map(value => Number(value).toFixed(6));
+        const offset = annotation.cameraOffset || [0, 0, 0];
+        [fields.ox.value, fields.oy.value, fields.oz.value] = offset.map(value => Number(value).toFixed(6));
     }
 
     function readForm() {
         return {
-            center: [Number(fields.cx.value), Number(fields.cy.value), Number(fields.cz.value)],
-            extent: [Number(fields.ex.value), Number(fields.ey.value), Number(fields.ez.value)],
-            rotation: [0, 0, Number(fields.yaw.value) || 0],
+            bbox: {
+                center: [Number(fields.cx.value), Number(fields.cy.value), Number(fields.cz.value)],
+                extent: [Number(fields.ex.value), Number(fields.ey.value), Number(fields.ez.value)],
+                rotation: [0, 0, Number(fields.yaw.value) || 0]
+            },
             anchor: [Number(fields.ax.value), Number(fields.ay.value), Number(fields.az.value)],
             focus: [Number(fields.fx.value), Number(fields.fy.value), Number(fields.fz.value)],
-            cameraOffset: [Number(fields.ox.value), Number(fields.oy.value), Number(fields.oz.value)]
+            cameraOffset: [Number(fields.ox.value), Number(fields.oy.value), Number(fields.oz.value)],
+            camera: current()?.camera || null
         };
     }
 
-    function writeForm(annotation) {
-        [fields.cx.value, fields.cy.value, fields.cz.value] = annotation.center.map(value => value.toFixed(6));
-        [fields.ex.value, fields.ey.value, fields.ez.value] = annotation.extent.map(value => value.toFixed(6));
-        fields.yaw.value = String(annotation.rotation?.[2] || 0);
-        [fields.ax.value, fields.ay.value, fields.az.value] = annotation.anchor.map(value => value.toFixed(6));
-        [fields.fx.value, fields.fy.value, fields.fz.value] = annotation.focus.map(value => value.toFixed(6));
-        [fields.ox.value, fields.oy.value, fields.oz.value] = annotation.cameraOffset.map(value => value.toFixed(6));
-    }
-
-    function current(id = select.value) {
-        const entry = scene.objectEntries.get(id);
-        return entry?.annotation ? { ...entry.annotation, ...entry.presentation } : annotationFromEntry(entry);
-    }
-
     function selectObject() {
+        scene.detachTransformControls();
+        scene.highlightObject(select.value, { focus: false });
         writeForm(current());
-        status.textContent = `Editing ${select.options[select.selectedIndex].textContent}`;
+        status.textContent = `Editing ${select.options[select.selectedIndex]?.textContent || select.value}`;
+        if (["move", "resize", "rotate"].includes(tool)) scene.setTransformMode(tool, select.value);
     }
 
-    function apply() {
-        const annotation = readForm();
-        const finitePoints = [annotation.anchor, annotation.focus, annotation.cameraOffset].every(point => point.every(Number.isFinite));
-        if (!annotation.center.every(Number.isFinite) || !annotation.extent.every(value => Number.isFinite(value) && value > 0) || !finitePoints) {
-            status.textContent = "Enter finite coordinates and positive extents";
+    function setTool(nextTool) {
+        tool = nextTool;
+        toolButtons.forEach(button => button.classList.toggle("is-active", button.dataset.tool === tool));
+        if (tool === "draw-box") {
+            scene.detachTransformControls();
+            scene.setOrbitEnabled(true);
+            instructions.textContent = "Drag a rectangle around the visible object. Release to create a depth-filtered 3D seed box.";
+            status.textContent = "Draw Box ready";
             return;
         }
-        applyToScene(scene, select.value, annotation);
-        status.textContent = "Applied in scene.ply frame";
+        if (tool === "anchor" || tool === "focus") {
+            scene.detachTransformControls();
+            scene.setOrbitEnabled(true);
+            instructions.textContent = `Click the real point-cloud surface to set ${tool === "anchor" ? "the relation anchor" : "the presentation focus"}.`;
+            status.textContent = `Click point cloud to set ${tool}`;
+            return;
+        }
+        scene.setTransformMode(tool, select.value);
+        instructions.textContent = tool === "resize"
+            ? "Drag the scale gizmo handles to resize the box."
+            : tool === "rotate"
+                ? "Drag the Y-axis rotation ring to change yaw."
+                : "Drag the selected box gizmo. Orbit is paused while the gizmo is active.";
+        status.textContent = `${tool[0].toUpperCase()}${tool.slice(1)} mode`;
     }
 
-    function readSaved() {
-        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+    function handlePointerDown(event) {
+        if (tool !== "draw-box" || event.button !== 0) return false;
+        drawing = true;
+        drawStart = { x: event.clientX, y: event.clientY };
+        scene.setOrbitEnabled(false);
+        scene.showSelectionRectangle(drawStart, drawStart);
+        event.preventDefault();
+        return true;
+    }
+
+    function handlePointerMove(event) {
+        if (!drawing) return false;
+        scene.showSelectionRectangle(drawStart, { x: event.clientX, y: event.clientY });
+        event.preventDefault();
+        return true;
+    }
+
+    function handlePointerUp(event) {
+        if (!drawing) return false;
+        const end = { x: event.clientX, y: event.clientY };
+        drawing = false;
+        scene.hideSelectionRectangle();
+        scene.setOrbitEnabled(true);
+        const points = scene.selectPointCloudRectangle(drawStart, end, select.value);
+        if (points.length >= 8 && scene.createBoxFromPoints(select.value, points)) {
+            scene.highlightObject(select.value, { focus: false });
+            writeForm(current());
+            setTool("move");
+            status.textContent = `Box seed created from ${points.length.toLocaleString()} filtered points`;
+        } else {
+            status.textContent = "No sufficient point-cloud sample in rectangle";
+        }
+        drawStart = null;
+        event.preventDefault();
+        return true;
+    }
+
+    function handleClick(event) {
+        if (tool === "anchor" || tool === "focus") {
+            const point = scene.pickPointAt(event.clientX, event.clientY, select.value);
+            if (!point) {
+                status.textContent = "No point-cloud surface found at that click";
+                return true;
+            }
+            const kind = tool === "anchor" ? "anchor" : "focus";
+            scene.setPresentationPointFromWorld(select.value, kind, point);
+            writeForm(current());
+            status.textContent = `${kind[0].toUpperCase()}${kind.slice(1)} saved from point-cloud click`;
+            return true;
+        }
+        if (tool === "draw-box" || ["move", "resize", "rotate"].includes(tool)) return true;
+        return false;
+    }
+
+    function applyNumeric() {
+        const annotation = readForm();
+        const finite = [...annotation.bbox.center, ...annotation.bbox.extent, ...annotation.anchor, ...annotation.focus, ...annotation.cameraOffset].every(Number.isFinite);
+        if (!finite || annotation.bbox.extent.some(value => value <= 0)) {
+            status.textContent = "Numeric values must be finite and extents must be positive";
+            return;
+        }
+        scene.setEntryAnnotation(select.value, annotation);
+        scene.setTransformMode(tool, select.value);
+        status.textContent = "Applied in aligned_world frame";
     }
 
     function save() {
-        const saved = readSaved();
-        saved[select.value] = readForm();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved, null, 2));
-        const blob = new Blob([JSON.stringify({ coordinate_frame: "scene.ply", objects: saved }, null, 2)], { type: "application/json" });
+        const objects = {};
+        scene.objectEntries.forEach(entry => { objects[entry.id] = scene.getAnnotation(entry.id); });
+        const payload = {
+            version: 2,
+            coordinateFrame: "aligned_world",
+            sourceCoordinateFrame: "scene.ply",
+            worldAlignment: scene.presentation.worldAlignment || { enabled: true, quaternion: [0, 0, 0, 1], translation: [0, 0, 0] },
+            annotationSource: "manual_real_scene_verification",
+            objects
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload, null, 2));
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "scene_presentation_manual.json";
+        link.download = "scene_presentation_manual_aligned.json";
         link.click();
         URL.revokeObjectURL(link.href);
-        status.textContent = "Saved locally and downloaded";
+        status.textContent = "All annotations saved locally and downloaded";
+    }
+
+    function saveCamera() {
+        if (!scene.saveCurrentCamera(select.value)) {
+            status.textContent = "Camera could not be saved";
+            return;
+        }
+        writeForm(current());
+        status.textContent = `Camera preset saved for ${select.options[select.selectedIndex]?.textContent || select.value}`;
     }
 
     function reloadSaved() {
-        const saved = readSaved();
-        if (!saved[select.value]) {
+        let payload;
+        try { payload = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { payload = {}; }
+        const saved = payload.objects?.[select.value] || payload[select.value];
+        if (!saved) {
             status.textContent = "No saved annotation for this object";
             return;
         }
-        applyToScene(scene, select.value, saved[select.value]);
-        writeForm(saved[select.value]);
+        const annotation = saved.bbox ? saved : { bbox: { center: saved.center, extent: saved.extent, rotation: saved.rotation }, anchor: saved.anchor, focus: saved.focus, cameraOffset: saved.cameraOffset, camera: saved.camera };
+        scene.setEntryAnnotation(select.value, annotation);
+        writeForm(current());
         status.textContent = "Reloaded saved annotation";
     }
 
+    function onSceneChanged(objectId) {
+        if (String(objectId) === String(select.value)) writeForm(current());
+    }
+
     select.addEventListener("change", selectObject);
-    panel.querySelector('[data-action="apply"]').addEventListener("click", apply);
+    toolButtons.forEach(button => button.addEventListener("click", () => setTool(button.dataset.tool)));
+    panel.querySelector('[data-action="apply"]').addEventListener("click", applyNumeric);
+    panel.querySelector('[data-action="camera"]').addEventListener("click", saveCamera);
     panel.querySelector('[data-action="save"]').addEventListener("click", save);
     panel.querySelector('[data-action="reload"]').addEventListener("click", reloadSaved);
-    selectObject();
-    window.__spotDemo.annotationMode = { apply, save, reloadSaved, panel };
+
+    scene.setAnnotationController({ handlePointerDown, handlePointerMove, handlePointerUp, handleClick, onSceneChanged, onTransformDragging: dragging => scene.setOrbitEnabled(!dragging) });
+    if (select.options.length) selectObject();
+    window.__spotDemo.annotationMode = { panel, save, reloadSaved, setTool, apply: applyNumeric };
     return { panel };
 }
 
-function boxVertices(annotation) {
-    const [cx, cy, cz] = annotation.center;
-    const [sx, sy, sz] = annotation.extent.map(value => value / 2);
-    const yaw = (annotation.rotation?.[2] || 0) * Math.PI / 180;
-    const local = [[-sx, -sy, -sz], [sx, -sy, -sz], [-sx, sy, -sz], [-sx, -sy, sz], [sx, sy, sz], [-sx, sy, sz], [sx, sy, -sz], [sx, -sy, sz]];
-    return local.map(([x, y, z]) => [cx + x * Math.cos(yaw) - y * Math.sin(yaw), cy + x * Math.sin(yaw) + y * Math.cos(yaw), cz + z]);
-}
-
-function applyToScene(scene, objectId, annotation) {
-    const entry = scene.objectEntries.get(objectId);
-    if (!entry) return;
-    const vertices = boxVertices(annotation);
-    const edgeVertices = [];
-    BOX_EDGES.forEach(([start, end]) => edgeVertices.push(vertices[start], vertices[end]));
-    entry.wireframe.geometry.dispose();
-    entry.wireframe.geometry = new THREE.BufferGeometry().setFromPoints(edgeVertices.map(point => new THREE.Vector3(...point)));
-    entry.wireframe.geometry.computeBoundingSphere();
-    entry.hitMesh.geometry.dispose();
-    entry.hitMesh.geometry = new ConvexGeometry(vertices.map(point => new THREE.Vector3(...point)));
-    entry.center.set(...annotation.center);
-    entry.annotation = { center: [...annotation.center], extent: [...annotation.extent], rotation: [...annotation.rotation] };
-    entry.vertices = vertices;
-    scene.updatePresentationPoints(objectId, { anchor: annotation.anchor, focus: annotation.focus, cameraOffset: annotation.cameraOffset });
-}
+// Keep a small Three namespace reference in this module for consumers that
+// import it while developing annotation plugins; all geometry work lives in SceneView.
+export { THREE };

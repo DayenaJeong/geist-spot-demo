@@ -14,6 +14,7 @@ async function main() {
     const data = await loadDemoData(DATA_URL);
     const query = new URLSearchParams(window.location.search);
     const annotationMode = query.get("annotate") === "1";
+    const debugMode = query.get("debug") === "1" && !data.presentationMode;
     data.annotationMode = annotationMode;
     if (annotationMode) data.presentationMode = false;
     document.body.dataset.presentationMode = String(data.presentationMode);
@@ -23,7 +24,9 @@ async function main() {
     });
     const scene = new SceneView(elements.sceneCanvas, elements.scenePlaceholder, elements.sceneModeTag, {
         onObjectSelected: (objectId, metadata) => controller.onObjectSelected(objectId, metadata),
-        onObjectHovered: objectId => controller.onObjectHovered(objectId)
+        onObjectHovered: objectId => controller.onObjectHovered(objectId),
+        debugMode,
+        annotationMode
     });
     const refreshLayout = () => window.requestAnimationFrame(() => {
         graph.fit();
