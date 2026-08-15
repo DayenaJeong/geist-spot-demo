@@ -83,7 +83,7 @@ export class StateController {
         });
     }
 
-    onObjectSelected(objectId, { source } = {}) {
+    onObjectSelected(objectId, { source, focus = false } = {}) {
         if (!objectId) {
             this.clearSelection();
             return;
@@ -92,7 +92,7 @@ export class StateController {
         const object = this.data.objectById.get(normalizedId);
         if (!object) return;
         this.selectedObjectId = normalizedId;
-        this.applySelection({ focus: source === "graph" });
+        this.applySelection({ focus: focus || source === "graph" });
         this.elements.selectionStatus.textContent = `Selected: ${object.label}`;
         this.updateSelectionCard(object, this.relatedObjectIds());
     }
@@ -182,7 +182,7 @@ export class StateController {
         this.elements.autoDemoButton.textContent = "Stop Auto Demo";
         this.elements.autoDemoButton.setAttribute("aria-pressed", "true");
         this.setState("INITIAL", { fromAuto: true, preserveMedia: true });
-        this.onObjectSelected("lamp", { source: "auto" });
+        this.onObjectSelected("lamp", { source: "auto", focus: true });
         const evidenceA = this.recordedEvidence("AFTER_SWITCH_A");
         const evidenceB = this.recordedEvidence("AFTER_SWITCH_B");
         if (!evidenceA || !evidenceB) {
@@ -198,7 +198,7 @@ export class StateController {
         const active = () => this.autoRunning && token === this.autoRunToken;
         const wait = delay => new Promise(resolve => window.setTimeout(resolve, delay));
         await wait(450); if (!active()) return;
-        this.onObjectSelected("switch_A", { source: "auto" });
+        this.onObjectSelected("switch_A", { source: "auto", focus: true });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;
         this.showTransition("Switch A selected · evidence playing");
         await wait(evidenceA.press_contact_timestamp_sec * 1000); if (!active()) return;
@@ -208,7 +208,7 @@ export class StateController {
         this.setState("AFTER_SWITCH_A", { fromAuto: true, preserveMedia: true });
         this.showTransition("Lamp: OFF → OFF · Switch A REMOVED");
         await wait(1250); if (!active()) return;
-        this.onObjectSelected("switch_B", { source: "auto" });
+        this.onObjectSelected("switch_B", { source: "auto", focus: true });
         await this.playEvidence("AFTER_SWITCH_B"); if (!active()) return;
         this.showTransition("Switch B selected · evidence playing");
         await wait(evidenceB.press_contact_timestamp_sec * 1000); if (!active()) return;
@@ -217,7 +217,7 @@ export class StateController {
         this.showTransition("Lamp: OFF → ON");
         await wait((evidenceB.after_timestamp_sec - evidenceB.state_change_timestamp_sec) * 1000); if (!active()) return;
         this.setState("AFTER_SWITCH_B", { fromAuto: true, preserveMedia: true });
-        this.onObjectSelected("lamp", { source: "auto" });
+        this.onObjectSelected("lamp", { source: "auto", focus: true });
         this.stopAutoDemo();
         this.showTransition("Lamp selected · OFF → ON · Switch B VERIFIED");
     }
