@@ -5,6 +5,7 @@ import { ConvexGeometry } from "three/addons/geometries/ConvexGeometry.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
+import { RobotActor } from "./robot_actor.js";
 
 // The Spot PLY is already Y-up. Keep one explicit root so a future alignment
 // can be changed in one place without independently rotating annotations.
@@ -51,6 +52,7 @@ export class SceneView {
         this.lampHighlightCloud = null;
         this.lampState = "OFF";
         this.interactionAnnotations = { switchId: null, lampState: "OFF" };
+        this.sceneState = "loading";
         this.hasPointCloud = false;
         this.hasBoundingBoxes = false;
         this.showBoundingBoxes = true;
@@ -73,14 +75,16 @@ export class SceneView {
         this.debugRoot.name = "world-debug-helpers";
         this.worldRoot.add(this.debugRoot);
         this.debugOverlay = null;
+        this.robotActor = new RobotActor();
+        this.scene.add(this.robotActor.root);
+        this.setSceneState("loading");
 
         try {
             this.initializeRenderer();
             this.startAnimation();
         } catch (error) {
             console.warn(`3D viewer unavailable; graph remains active: ${error.message}`);
-            this.setStatus("3D scene data not loaded");
-            this.modeTag.textContent = "3D UNAVAILABLE";
+            this.setSceneState("failed");
         }
     }
 
@@ -148,12 +152,13 @@ export class SceneView {
     }
 
     async loadManifest(manifest) {
+        this.setSceneState("loading");
         this.clearGeometry();
         this.manifest = manifest || null;
         this.presentation = manifest?.presentation || {};
         this.applyWorldAlignment();
         if (!this.renderer || !manifest) {
-            this.setStatus("3D scene data not loaded");
+            this.setSceneState("failed");
             return;
         }
 
@@ -167,13 +172,13 @@ export class SceneView {
         await pointCloudPromise;
         this.applyWorldAlignment();
         this.applyLampStateVisual();
+        this.updateWorldMetrics();
+        this.robotActor.configure({ objectEntries: this.objectEntries, floorY: this.worldMetrics.floorY });
 
-        if (!this.hasPointCloud && !this.hasBoundingBoxes) {
-            this.setStatus("3D scene data not loaded");
-            this.modeTag.textContent = "EMPTY DATA MODE";
+        if (!this.hasPointCloud) {
+            this.setSceneState("failed");
         } else {
-            this.modeTag.textContent = "SCENE DATA READY";
-            this.setStatus("SCENE DATA READY");
+            this.setSceneState("loaded");
             this.applyInitialView();
             this.updateWorldMetrics();
             this.updateDebugHelpers();
@@ -254,12 +259,11 @@ export class SceneView {
                     pointSize
                 };
                 this.hasPointCloud = true;
-                this.modeTag.textContent = "SCENE DATA READY";
                 this.addCoordinateAxes(geometry);
                 resolve(true);
             }, undefined, error => {
                 console.warn(`Point cloud unavailable; continuing without it: ${error.message || error}`);
-                this.setStatus(this.hasBoundingBoxes ? "Bounding boxes loaded · point cloud unavailable" : "3D scene data not loaded");
+                this.setSceneState("failed");
                 resolve(false);
             });
         });
@@ -326,7 +330,6 @@ export class SceneView {
         this.objectEntries.set(objectId, entry);
         this.applyInteractionLabel(entry);
         this.hasBoundingBoxes = true;
-        this.modeTag.textContent = "SCENE DATA READY";
         this.updatePlaceholder();
         this.updateEntryVisual(entry);
     }
@@ -512,6 +515,7 @@ export class SceneView {
     setInteractionAnnotations({ switchId = null, lampState = "OFF" } = {}) {
         this.interactionAnnotations = { switchId: switchId ? String(switchId) : null, lampState: String(lampState || "OFF").toUpperCase() === "ON" ? "ON" : "OFF" };
         this.objectEntries.forEach(entry => this.applyInteractionLabel(entry));
+        this.robotActor?.setTarget(this.interactionAnnotations.switchId);
     }
 
     updateEntryVisual(entry) {
@@ -1103,7 +1107,6 @@ export class SceneView {
         colors.needsUpdate = true;
         this.pointCloud.userData.lampState = this.lampState;
         this.pointCloud.userData.lampPointCount = affected;
-        this.modeTag.textContent = `SCENE DATA READY · LAMP ${this.lampState}`;
     }
 
     computePointSize(geometry) {
@@ -1112,6 +1115,22 @@ export class SceneView {
         const scaleAwareSize = THREE.MathUtils.clamp(maxDimension * 0.0002, 0.0005, 0.004);
         const sourceSize = geometry.attributes.size?.array?.[0];
         return Number.isFinite(sourceSize) && sourceSize > 0 ? Math.min(sourceSize, scaleAwareSize) : scaleAwareSize;
+    }
+
+    moveRobotTo(targetName, options) {
+        return this.robotActor?.moveTo(targetName, options) || Promise.resolve(false);
+    }
+
+    pressRobot(targetName, options) {
+        return this.robotActor?.press(targetName, options) || Promise.resolve(false);
+    }
+
+    resetRobotPresentation() {
+        this.robotActor?.reset();
+    }
+
+    cancelRobotAnimation() {
+        this.robotActor?.cancelAnimation();
     }
 
     getRenderableBounds() {
@@ -1144,6 +1163,11 @@ export class SceneView {
     }
 
     clearGeometry() {
+        this.robotActor?.reset();
+        if (this.robotActor) {
+            this.robotActor.root.visible = false;
+            this.robotActor.targetMarker.visible = false;
+        }
         this.detachTransformControls();
         this.objectEntries.clear();
         this.raycastObjects = [];
@@ -1190,12 +1214,40 @@ export class SceneView {
     }
 
     updatePlaceholder() {
-        this.placeholder.hidden = this.hasPointCloud || this.hasBoundingBoxes;
+        if (this.placeholder) this.placeholder.hidden = this.sceneState === "loaded";
     }
 
     setStatus(message) {
         const strong = this.placeholder?.querySelector("strong");
         if (strong) strong.textContent = message;
+        this.updatePlaceholder();
+    }
+
+    setSceneState(state) {
+        const stateConfig = {
+            loading: {
+                tag: "LOADING 3D SCENE",
+                status: "Loading 3D scene…",
+                detail: "Preparing point cloud and object annotations."
+            },
+            loaded: {
+                tag: "REAL SCENE · POINT CLOUD",
+                status: "",
+                detail: ""
+            },
+            failed: {
+                tag: "3D SCENE UNAVAILABLE",
+                status: "3D scene unavailable",
+                detail: "Scene assets could not be loaded."
+            }
+        };
+        const config = stateConfig[state] || stateConfig.failed;
+        this.sceneState = state;
+        if (this.modeTag) this.modeTag.textContent = config.tag;
+        const strong = this.placeholder?.querySelector("strong");
+        const detail = this.placeholder?.querySelector(".scene-placeholder-detail") || this.placeholder?.querySelector("span:last-child");
+        if (strong && config.status) strong.textContent = config.status;
+        if (detail && config.detail) detail.textContent = config.detail;
         this.updatePlaceholder();
     }
 
@@ -1219,6 +1271,7 @@ export class SceneView {
         const animate = now => {
             this.animationFrame = requestAnimationFrame(animate);
             this.updateCameraTween(now);
+            this.robotActor?.update(now);
             this.camera?.up.set(0, 1, 0);
             this.clampCameraAboveFloor();
             this.controls?.update();

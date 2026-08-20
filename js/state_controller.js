@@ -75,6 +75,8 @@ export class StateController {
             switchId: stateName === "AFTER_SWITCH_A" ? "switch_A" : stateName === "AFTER_SWITCH_B" ? "switch_B" : null,
             lampState
         });
+        if (stateName === "INITIAL") this.scene.resetRobotPresentation?.();
+        else if (!fromAuto) this.scene.moveRobotTo?.(stateName === "AFTER_SWITCH_A" ? "switch_A" : "switch_B", { duration: 1100 });
         this.graph.render(this.data.objects, state.relations);
         if (this.selectedObjectId) this.applySelection({ focus: false });
         this.updateStateControls();
@@ -229,22 +231,28 @@ export class StateController {
         this.onObjectSelected("lamp", { source: "auto", focus: true, preserveView: true });
         await wait(450); if (!active()) return;
         await wait(1200); if (!active()) return;
+        this.showTransition("Spot moving to Switch A · illustrative motion");
+        await this.scene.moveRobotTo?.("switch_A", { duration: 1300 }); if (!active()) return;
         this.setEvidenceStage("SWITCH A · EVIDENCE PLAYING");
         this.onObjectSelected("switch_A", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_A"); if (!active()) return;
         this.showTransition("Switch A selected · evidence playing");
         await wait(evidenceA.press_contact_timestamp_sec * 1000); if (!active()) return;
+        await this.scene.pressRobot?.("switch_A", { duration: 760 }); if (!active()) return;
         this.showTransition("Successful press · Switch A");
         await wait((evidenceA.after_timestamp_sec - evidenceA.press_contact_timestamp_sec) * 1000); if (!active()) return;
         this.showTransition("Lamp: OFF → OFF");
         this.setState("AFTER_SWITCH_A", { fromAuto: true, preserveMedia: true });
         this.showTransition("Lamp: OFF → OFF · Switch A REMOVED");
         await wait(1250); if (!active()) return;
+        this.showTransition("Spot moving to Switch B · illustrative motion");
+        await this.scene.moveRobotTo?.("switch_B", { duration: 1300 }); if (!active()) return;
         this.setEvidenceStage("SWITCH B · EVIDENCE PLAYING");
         this.onObjectSelected("switch_B", { source: "auto", focus: true, preserveView: true });
         await this.playEvidence("AFTER_SWITCH_B"); if (!active()) return;
         this.showTransition("Switch B selected · evidence playing");
         await wait(evidenceB.press_contact_timestamp_sec * 1000); if (!active()) return;
+        await this.scene.pressRobot?.("switch_B", { duration: 760 }); if (!active()) return;
         this.showTransition("Successful press · Switch B");
         await wait((evidenceB.state_change_timestamp_sec - evidenceB.press_contact_timestamp_sec) * 1000); if (!active()) return;
         this.showTransition("Lamp: OFF → ON");
@@ -261,6 +269,7 @@ export class StateController {
         this.autoTimers = [];
         this.autoRunning = false;
         this.autoRunToken += 1;
+        this.scene.cancelRobotAnimation?.();
         document.body.dataset.autoDemo = "false";
         if (resetButton) {
             this.elements.autoDemoButton.textContent = "Auto Demo";
