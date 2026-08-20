@@ -6,8 +6,8 @@
     <meta name="description" content="Spot functional-relation verification research demo">
     <title>Spot Functional Relation Verification</title>
     <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./css/viewer.css?three-video-20260815">
-    <link rel="stylesheet" href="./css/presentation_enhancements.css?selection-card-right-20260815">
+    <link rel="stylesheet" href="./css/viewer.css?presentation-polish-20260818">
+    <link rel="stylesheet" href="./css/presentation_enhancements.css?selection-card-right-20260815-robot-20260821">
     <script type="importmap">
         {
             "imports": {
@@ -26,7 +26,7 @@
                 <h1>Functional Relation Verification</h1>
                 <p class="subtitle">Evidence-grounded scene graph update from physical interaction</p>
             </div>
-            <div class="header-mark" aria-label="Spot verification demo">SPOT<br><span>LIVE DEMO</span></div>
+            <div class="header-mark" aria-label="Spot verification demo">SPOT<br><span>INTERACTIVE DEMO</span></div>
         </header>
 
         <nav class="control-bar" aria-label="Verification states">
@@ -47,7 +47,7 @@
         <main class="workspace" aria-label="Functional graph and 3D scene">
             <section class="panel graph-panel" aria-labelledby="graphTitle">
                 <div class="panel-heading">
-                    <div><p class="panel-kicker">STRUCTURAL HYPOTHESIS</p><h2 id="graphTitle">Functional Scene Graph</h2></div>
+                    <div><p class="panel-kicker">STRUCTURAL HYPOTHESIS</p><h2 id="graphTitle">Functional Scene Graph</h2><p class="panel-meta">Upstream reference · <a href="https://arxiv.org/abs/2604.03696" target="_blank" rel="noreferrer">FunFact [1]</a></p></div>
                     <span class="panel-tag">3 OBJECTS · 2 RELATIONS</span>
                 </div>
                 <div id="network" class="network-container" aria-label="Interactive functional scene graph"></div>
@@ -55,14 +55,14 @@
             <section class="panel scene-panel" aria-labelledby="sceneTitle">
                 <div class="panel-heading">
                     <div><p class="panel-kicker">SPATIAL CONTEXT</p><h2 id="sceneTitle">3D Scene Explorer</h2></div>
-                    <span class="panel-tag" id="sceneModeTag">EMPTY DATA MODE</span>
+                    <span class="panel-tag" id="sceneModeTag">LOADING 3D SCENE</span>
                 </div>
                 <div class="scene-stage">
                     <div id="sceneCanvas" class="scene-canvas" aria-label="Three-dimensional scene viewer"></div>
                     <div id="scenePlaceholder" class="scene-placeholder">
                         <span class="placeholder-icon" aria-hidden="true">◌</span>
-                        <strong>3D scene data not loaded</strong>
-                        <span>Provide a real Spot PLY and bounding-box manifest when available.</span>
+                        <strong>Loading 3D scene…</strong>
+                        <span class="scene-placeholder-detail">Preparing point cloud and object annotations.</span>
                     </div>
                     <div id="sceneSelectionCard" class="scene-selection-card" hidden>
                         <span class="selection-kicker">SELECTED OBJECT</span>
@@ -70,6 +70,7 @@
                         <span id="sceneSelectionMeta"></span>
                     </div>
                     <div class="scene-help">Drag to orbit · right-drag to pan · scroll to zoom · click an object to focus</div>
+                    <div class="robot-motion-note">Illustrative robot motion</div>
                 </div>
             </section>
         </main>
@@ -78,13 +79,18 @@
             <div class="evidence-heading"><p class="panel-kicker">PHYSICAL EVIDENCE</p><h2 id="evidenceTitle">Verification record</h2></div>
             <div class="evidence-content" id="evidenceContent" aria-live="polite"></div>
             <div class="transition-message" id="transitionMessage" aria-live="polite"></div>
+            <div class="verification-rule" aria-label="Verification rule">
+                <span class="verification-rule-title">VERIFICATION RULE</span>
+                <span>Confirmed interaction + target state change → VERIFIED</span>
+                <span>Confirmed interaction + no observed target change → UNSUPPORTED IN THIS CONTROLLED SETUP</span>
+            </div>
         </section>
         <section class="media-region" id="mediaRegion" hidden aria-label="Recorded video evidence">
             <div class="media-heading"><p class="panel-kicker">RECORDED VIDEO EVIDENCE</p><label for="mediaMode">Layout</label><select id="mediaMode"><option value="pair">Far view + external + corrected onboard</option><option value="graph-3d">Graph + 3D</option><option value="external">External supporting clip</option><option value="onboard">Corrected onboard clip</option></select></div>
             <div class="media-grid" id="mediaGrid"></div>
         </section>
-        <footer class="app-footer"><span>Interactive scene graph · recorded evidence presentation</span><span id="selectionStatus">No object selected</span></footer>
+        <footer class="app-footer"><span>Interactive scene graph · recorded evidence presentation</span><span class="footer-reference"><a href="https://arxiv.org/abs/2604.03696" target="_blank" rel="noreferrer">[1] Fu et al., “FunFact: Building Probabilistic Functional 3D Scene Graphs via Factor-Graph Reasoning,” arXiv:2604.03696 (2026)</a></span><span id="selectionStatus">No object selected</span></footer>
     </div>
-    <script type="module" src="./js/app.js?v=status-labels-refined-20260815"></script>
+    <script type="module" src="./js/app.js?v=presentation-polish-20260818-robot-20260821"></script>
 </body>
 </html>
