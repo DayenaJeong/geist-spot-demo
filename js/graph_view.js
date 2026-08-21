@@ -90,12 +90,13 @@ export class GraphView {
             smooth: false,
             font: {
                 face: "Segoe UI, Arial, sans-serif",
-                size: 11,
+                size: 12,
                 align: "horizontal",
                 vadjust: labelLift,
-                strokeWidth: 0,
+                strokeWidth: 4,
+                strokeColor: "#fbfdfe",
                 color: "#526879",
-                background: "rgba(255, 255, 255, 0.94)"
+                background: "none"
             }
         };
 
@@ -105,7 +106,7 @@ export class GraphView {
                 label: "removed",
                 title: "Relation removed: no observable lamp-state change",
                 color: { color: "#b9c0c8", highlight: "#ad5e68" },
-                font: { ...common.font, color: "#9b4d58", background: "#fffafb" },
+                font: { ...common.font, color: "#9b4d58", background: "none" },
                 width: 2,
                 dashes: [8, 8],
                 arrows: { to: { enabled: false }, from: { enabled: false } }
@@ -118,10 +119,10 @@ export class GraphView {
                 label: `${relation.relation}  ·  verified`,
                 title: "Verified: successful press caused Lamp OFF -> ON",
                 color: { color: "#25834f", highlight: "#16653b" },
-                font: { ...common.font, color: "#207346", background: "#f5fcf7" },
+                font: { ...common.font, color: "#207346", background: "none" },
                 width: 3,
                 dashes: false,
-                arrows: { to: { enabled: true, scaleFactor: 0.85 } }
+                arrows: { to: { enabled: true, scaleFactor: 1.0 } }
             };
         }
 
@@ -130,10 +131,10 @@ export class GraphView {
             label: relation.relation,
             title: "Candidate relation awaiting physical verification",
             color: { color: "#2b78ad", highlight: "#15557f" },
-            font: { ...common.font, color: "#23658e", background: "#f7fbfe" },
-            width: 2,
+            font: { ...common.font, color: "#23658e", background: "none" },
+            width: 2.5,
             dashes: false,
-            arrows: { to: { enabled: true, scaleFactor: 0.8 } }
+            arrows: { to: { enabled: true, scaleFactor: 1.0 } }
         };
     }
 
