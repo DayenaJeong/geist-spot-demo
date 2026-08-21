@@ -169,6 +169,8 @@ export class SceneView {
             </div>
             <div class="robot-tuning-grid">
                 <label>Body yaw <output data-value="yaw"></output><input data-tuning="yaw" type="range" min="-180" max="180" step="1"></label>
+                <label>Position X <output data-value="offsetX"></output><input data-tuning="offsetX" type="range" min="-1.5" max="1.5" step="0.01"></label>
+                <label>Position Z <output data-value="offsetZ"></output><input data-tuning="offsetZ" type="range" min="-1.5" max="1.5" step="0.01"></label>
                 <label>Rest shoulder <output data-value="restSh1"></output><input data-tuning="restSh1" type="range" min="-180" max="30" step="1"></label>
                 <label>Rest elbow <output data-value="restEl0"></output><input data-tuning="restEl0" type="range" min="0" max="180" step="1"></label>
                 <label>Press shoulder <output data-value="pressSh1"></output><input data-tuning="pressSh1" type="range" min="-180" max="30" step="1"></label>
@@ -176,6 +178,7 @@ export class SceneView {
             </div>
             <div class="robot-tuning-actions">
                 <button type="button" data-action="reset">Reset</button>
+                <button type="button" data-action="save">Save pose</button>
                 <button type="button" data-action="copy">Copy URL</button>
                 <span data-role="status" aria-live="polite"></span>
             </div>
@@ -190,6 +193,8 @@ export class SceneView {
 
         const setInputValues = tuning => {
             inputs.yaw.value = Math.round(tuning.yawOffsetDeg);
+            inputs.offsetX.value = tuning.offsetX.toFixed(2);
+            inputs.offsetZ.value = tuning.offsetZ.toFixed(2);
             inputs.restSh1.value = Math.round(THREE.MathUtils.radToDeg(tuning.restSh1));
             inputs.restEl0.value = Math.round(THREE.MathUtils.radToDeg(tuning.restEl0));
             inputs.pressSh1.value = Math.round(THREE.MathUtils.radToDeg(tuning.pressSh1));
@@ -198,6 +203,8 @@ export class SceneView {
 
         const readValues = () => ({
             yaw: Number(inputs.yaw.value),
+            offsetX: Number(inputs.offsetX.value),
+            offsetZ: Number(inputs.offsetZ.value),
             restSh1: Number(inputs.restSh1.value),
             restEl0: Number(inputs.restEl0.value),
             pressSh1: Number(inputs.pressSh1.value),
@@ -206,6 +213,8 @@ export class SceneView {
 
         const updateLabels = values => {
             outputs.yaw.value = `${values.yaw}°`;
+            outputs.offsetX.value = `${values.offsetX.toFixed(2)} m`;
+            outputs.offsetZ.value = `${values.offsetZ.toFixed(2)} m`;
             outputs.restSh1.value = `${values.restSh1}°`;
             outputs.restEl0.value = `${values.restEl0}°`;
             outputs.pressSh1.value = `${values.pressSh1}°`;
@@ -216,6 +225,8 @@ export class SceneView {
             const values = readValues();
             this.robotActor.setTuning({
                 yawOffsetDeg: values.yaw,
+                offsetX: values.offsetX,
+                offsetZ: values.offsetZ,
                 restSh1: THREE.MathUtils.degToRad(values.restSh1),
                 restEl0: THREE.MathUtils.degToRad(values.restEl0),
                 pressSh1: THREE.MathUtils.degToRad(values.pressSh1),
@@ -225,6 +236,8 @@ export class SceneView {
             const url = new URL(window.location.href);
             url.searchParams.set("tune", "1");
             url.searchParams.set("robotYawDeg", String(values.yaw));
+            url.searchParams.set("robotOffsetX", values.offsetX.toFixed(2));
+            url.searchParams.set("robotOffsetZ", values.offsetZ.toFixed(2));
             url.searchParams.set("robotRestSh1", THREE.MathUtils.degToRad(values.restSh1).toFixed(4));
             url.searchParams.set("robotRestEl0", THREE.MathUtils.degToRad(values.restEl0).toFixed(4));
             url.searchParams.set("robotPressSh1", THREE.MathUtils.degToRad(values.pressSh1).toFixed(4));
@@ -237,6 +250,24 @@ export class SceneView {
             setInputValues(defaults);
             apply();
             status.textContent = "reset";
+        });
+        panel.querySelector("[data-action=\"save\"]").addEventListener("click", () => {
+            const values = readValues();
+            apply();
+            try {
+                window.localStorage.setItem("geistSpotPoseTuning", JSON.stringify({
+                    robotYawDeg: values.yaw,
+                    robotOffsetX: values.offsetX,
+                    robotOffsetZ: values.offsetZ,
+                    robotRestSh1: THREE.MathUtils.degToRad(values.restSh1),
+                    robotRestEl0: THREE.MathUtils.degToRad(values.restEl0),
+                    robotPressSh1: THREE.MathUtils.degToRad(values.pressSh1),
+                    robotPressEl0: THREE.MathUtils.degToRad(values.pressEl0)
+                }));
+                status.textContent = "saved in this browser";
+            } catch {
+                status.textContent = "save unavailable";
+            }
         });
         panel.querySelector("[data-action=\"copy\"]").addEventListener("click", async () => {
             try {

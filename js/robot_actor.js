@@ -12,7 +12,8 @@ const SPOT_BODY_LENGTH = 0.87244;
 
 // EDIT THIS BLOCK to tune the presentation pose yourself.  Angles are radians.
 // The URL parameters below override these values without editing the file:
-//   robotYawDeg, robotRestSh1, robotRestEl0, robotPressSh1, robotPressEl0
+//   robotYawDeg, robotRestSh1, robotRestEl0, robotPressSh1, robotPressEl0,
+//   robotOffsetX, robotOffsetZ
 const EDITABLE_ROBOT_TUNING = {
     yawOffsetDeg: 0,
     restArmPose: {
@@ -32,14 +33,26 @@ const EDITABLE_ROBOT_TUNING = {
         arm_wr0: 0.0,
         arm_wr1: 0.0,
         arm_f1x: -0.30
-    }
+    },
+    positionOffsetX: 0.0,
+    positionOffsetZ: 0.0
 };
 
 function readRobotTuning() {
     const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
+    let saved = {};
+    if (typeof window !== "undefined") {
+        try {
+            saved = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
+        } catch {
+            saved = {};
+        }
+    }
     const number = (key, fallback) => {
-        const value = Number(params?.get(key));
-        return Number.isFinite(value) ? value : fallback;
+        const urlValue = Number(params?.get(key));
+        if (Number.isFinite(urlValue)) return urlValue;
+        const savedValue = Number(saved?.[key]);
+        return Number.isFinite(savedValue) ? savedValue : fallback;
     };
     return {
         yawOffsetRad: THREE.MathUtils.degToRad(number("robotYawDeg", EDITABLE_ROBOT_TUNING.yawOffsetDeg)),
@@ -52,7 +65,9 @@ function readRobotTuning() {
             ...EDITABLE_ROBOT_TUNING.pressArmPose,
             arm_sh1: number("robotPressSh1", EDITABLE_ROBOT_TUNING.pressArmPose.arm_sh1),
             arm_el0: number("robotPressEl0", EDITABLE_ROBOT_TUNING.pressArmPose.arm_el0)
-        }
+        },
+        positionOffsetX: number("robotOffsetX", EDITABLE_ROBOT_TUNING.positionOffsetX),
+        positionOffsetZ: number("robotOffsetZ", EDITABLE_ROBOT_TUNING.positionOffsetZ)
     };
 }
 
@@ -127,6 +142,11 @@ export class RobotActor {
         this.yawOffsetRad = ACTIVE_ROBOT_TUNING.yawOffsetRad;
         this.restArmPose = { ...ACTIVE_ROBOT_TUNING.restArmPose };
         this.pressArmPose = { ...ACTIVE_ROBOT_TUNING.pressArmPose };
+        this.positionOffset = new THREE.Vector3(
+            ACTIVE_ROBOT_TUNING.positionOffsetX,
+            0,
+            ACTIVE_ROBOT_TUNING.positionOffsetZ
+        );
 
         this.loadModel();
     }
@@ -191,16 +211,20 @@ export class RobotActor {
             restSh1: this.restArmPose.arm_sh1,
             restEl0: this.restArmPose.arm_el0,
             pressSh1: this.pressArmPose.arm_sh1,
-            pressEl0: this.pressArmPose.arm_el0
+            pressEl0: this.pressArmPose.arm_el0,
+            offsetX: this.positionOffset.x,
+            offsetZ: this.positionOffset.z
         };
     }
 
-    setTuning({ yawOffsetDeg, restSh1, restEl0, pressSh1, pressEl0 } = {}) {
+    setTuning({ yawOffsetDeg, restSh1, restEl0, pressSh1, pressEl0, offsetX, offsetZ } = {}) {
         if (Number.isFinite(yawOffsetDeg)) this.yawOffsetRad = THREE.MathUtils.degToRad(yawOffsetDeg);
         if (Number.isFinite(restSh1)) this.restArmPose.arm_sh1 = restSh1;
         if (Number.isFinite(restEl0)) this.restArmPose.arm_el0 = restEl0;
         if (Number.isFinite(pressSh1)) this.pressArmPose.arm_sh1 = pressSh1;
         if (Number.isFinite(pressEl0)) this.pressArmPose.arm_el0 = pressEl0;
+        if (Number.isFinite(offsetX)) this.positionOffset.x = offsetX;
+        if (Number.isFinite(offsetZ)) this.positionOffset.z = offsetZ;
         this.applyArmPose(this.restArmPose);
         if (this.configured && this.objectEntries) {
             const activeTarget = this.activeTargetId;
@@ -270,6 +294,9 @@ export class RobotActor {
             .addScaledVector(perpendicular, switchDistance * 1.2);
         const startPose = makePose(startPosition, midpoint);
 
+        const positionOffset = this.positionOffset.clone();
+        positionOffset.y = 0;
+        [startPose, poseA, poseB].forEach(pose => pose.position.add(positionOffset));
         this.targets = { start: startPose, switch_A: poseA, switch_B: poseB };
         this.root.scale.setScalar(this.robotScale);
         this.targetMarker.scale.setScalar(this.robotScale);

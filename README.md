@@ -50,3 +50,8 @@ rest-arm shoulder/elbow, and press-arm shoulder/elbow. Changes apply live;
 `Copy URL` preserves the selected pose in a shareable URL, and `Reset` returns
 to the pose loaded at page start. This panel changes only the presentation
 actor and does not modify the point cloud, graph, or evidence sequence.
+
+The panel also exposes Position X and Position Z offsets in scene meters.
+Press `Save pose` to store all seven values in this browser; the saved pose
+is restored on the next `?tune=1` visit. `Copy URL` creates a shareable pose
+that takes precedence over the browser-saved pose.
