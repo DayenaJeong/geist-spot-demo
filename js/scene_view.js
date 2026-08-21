@@ -273,6 +273,7 @@ export class SceneView {
             const posePositions = this.robotActor.getManualPosePositions();
             try {
                 window.localStorage.setItem("geistSpotPoseTuning", JSON.stringify({
+                    profileId: "spot-default-pose-20260821",
                     robotYawDeg: values.yaw,
                     robotOffsetX: values.offsetX,
                     robotOffsetZ: values.offsetZ,

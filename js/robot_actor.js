@@ -9,17 +9,18 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const ROS_TO_THREE = new THREE.Quaternion(-0.5, -0.5, -0.5, 0.5);
 const UP = new THREE.Vector3(0, 1, 0);
 const SPOT_BODY_LENGTH = 0.87244;
+const DEFAULT_PROFILE_ID = "spot-default-pose-20260821";
 
 // EDIT THIS BLOCK to tune the presentation pose yourself.  Angles are radians.
 // The URL parameters below override these values without editing the file:
 //   robotYawDeg, robotRestSh1, robotRestEl0, robotPressSh1, robotPressEl0,
 //   robotOffsetX, robotOffsetZ
 const EDITABLE_ROBOT_TUNING = {
-    yawOffsetDeg: 0,
+    yawOffsetDeg: 75,
     restArmPose: {
         arm_sh0: 0.0,
-        arm_sh1: 0.0524,
-        arm_el0: 0.0349,
+        arm_sh1: -1.2741,
+        arm_el0: 1.3963,
         arm_el1: 0.0,
         arm_wr0: 0.0,
         arm_wr1: 0.0,
@@ -36,7 +37,12 @@ const EDITABLE_ROBOT_TUNING = {
         arm_f1x: -0.30
     },
     positionOffsetX: 0.0,
-    positionOffsetZ: 0.0
+    positionOffsetZ: 0.0,
+    manualPosePositions: {
+        start: [-1.3081, -0.5237, -0.2564],
+        switch_A: [-1.0911, -0.5237, -1.1813],
+        switch_B: [-0.9647, -0.5237, -1.2671]
+    }
 };
 
 function readRobotTuning() {
@@ -44,7 +50,8 @@ function readRobotTuning() {
     let saved = {};
     if (typeof window !== "undefined") {
         try {
-            saved = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
+            const stored = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
+            saved = stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
         } catch {
             saved = {};
         }
@@ -61,7 +68,10 @@ function readRobotTuning() {
             ? values.map(Number)
             : null;
     };
-    const savedPosePosition = (urlKey, name) => parsePosePosition(params?.get(urlKey)) || parsePosePosition(saved?.posePositions?.[name]);
+    const savedPosePosition = (urlKey, name) =>
+        parsePosePosition(params?.get(urlKey)) ||
+        parsePosePosition(saved?.posePositions?.[name]) ||
+        parsePosePosition(EDITABLE_ROBOT_TUNING.manualPosePositions?.[name]);
     return {
         yawOffsetRad: THREE.MathUtils.degToRad(number("robotYawDeg", EDITABLE_ROBOT_TUNING.yawOffsetDeg)),
         restArmPose: {
