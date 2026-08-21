@@ -80,19 +80,25 @@ export class GraphView {
     }
 
     styleRelation(relation) {
+        const labelLift = relation.state === "removed" ? -14 : 14;
+        const curve = relation.state === "removed"
+            ? { type: "curvedCW", roundness: 0.34 }
+            : { type: "curvedCCW", roundness: 0.34 };
         const common = {
             id: relation.id,
             from: relation.source,
             to: relation.target,
             relationState: relation.state,
             interaction: relation.relation,
-            smooth: { type: "cubicBezier", forceDirection: "horizontal", roundness: 0.28 },
+            smooth: curve,
             font: {
                 face: "Segoe UI, Arial, sans-serif",
                 size: 12,
                 align: "middle",
+                vadjust: labelLift,
                 strokeWidth: 0,
-                color: "#526879"
+                color: "#526879",
+                background: "rgba(255, 255, 255, 0.94)"
             }
         };
 
@@ -102,7 +108,7 @@ export class GraphView {
                 label: "REMOVED",
                 title: "Relation removed: no observable lamp-state change",
                 color: { color: "#b9c0c8", highlight: "#ad5e68" },
-                font: { ...common.font, color: "#9b4d58", background: "#f7f8fa" },
+                font: { ...common.font, color: "#9b4d58", background: "#fffafb" },
                 width: 2,
                 dashes: [8, 8],
                 arrows: { to: { enabled: false }, from: { enabled: false } }
@@ -115,7 +121,7 @@ export class GraphView {
                 label: `${relation.relation}  ·  VERIFIED`,
                 title: "Verified: successful press caused Lamp OFF -> ON",
                 color: { color: "#25834f", highlight: "#16653b" },
-                font: { ...common.font, color: "#207346", background: "#f4fbf6" },
+                font: { ...common.font, color: "#207346", background: "#f5fcf7" },
                 width: 3,
                 dashes: false,
                 arrows: { to: { enabled: true, scaleFactor: 0.85 } }
@@ -127,7 +133,7 @@ export class GraphView {
             label: `${relation.relation}  ·  CANDIDATE`,
             title: "Candidate relation awaiting physical verification",
             color: { color: "#2b78ad", highlight: "#15557f" },
-            font: { ...common.font, color: "#23658e" },
+            font: { ...common.font, color: "#23658e", background: "#f7fbfe" },
             width: 2,
             dashes: false,
             arrows: { to: { enabled: true, scaleFactor: 0.8 } }
