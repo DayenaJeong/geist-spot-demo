@@ -47,17 +47,19 @@ const EDITABLE_ROBOT_TUNING = {
 
 function readRobotTuning() {
     const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
+    const cleanQueryValue = value => typeof value === "string" ? value.replace(/\\+$/, "") : value;
+    const queryValue = key => cleanQueryValue(params?.get(key));
     let saved = {};
     if (typeof window !== "undefined") {
         try {
             const stored = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
-            saved = params?.get("tune") === "1" && stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
+            saved = queryValue("tune") === "1" && stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
         } catch {
             saved = {};
         }
     }
     const number = (key, fallback) => {
-        const urlValue = Number(params?.get(key));
+        const urlValue = Number(queryValue(key));
         if (Number.isFinite(urlValue)) return urlValue;
         const savedValue = Number(saved?.[key]);
         return Number.isFinite(savedValue) ? savedValue : fallback;
@@ -69,7 +71,7 @@ function readRobotTuning() {
             : null;
     };
     const savedPosePosition = (urlKey, name) =>
-        parsePosePosition(params?.get(urlKey)) ||
+        parsePosePosition(queryValue(urlKey)) ||
         parsePosePosition(saved?.posePositions?.[name]) ||
         parsePosePosition(EDITABLE_ROBOT_TUNING.manualPosePositions?.[name]);
     return {
