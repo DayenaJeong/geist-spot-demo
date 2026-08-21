@@ -51,7 +51,7 @@ function readRobotTuning() {
     if (typeof window !== "undefined") {
         try {
             const stored = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
-            saved = stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
+            saved = params?.get("tune") === "1" && stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
         } catch {
             saved = {};
         }
