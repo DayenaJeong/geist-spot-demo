@@ -27,8 +27,9 @@ const EDITABLE_ROBOT_TUNING = {
     },
     pressArmPose: {
         arm_sh0: 0.0,
-        arm_sh1: -0.5061,
-        arm_el0: 0.5760,
+        // Zero pitch keeps the press stroke level; only the arm moves.
+        arm_sh1: 0.0,
+        arm_el0: 0.0,
         arm_el1: 0.0,
         arm_wr0: 0.0,
         arm_wr1: 0.0,

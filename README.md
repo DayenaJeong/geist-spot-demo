@@ -37,7 +37,7 @@ To tune the presentation without changing the scene or evidence logic, edit
 also test values directly in the URL, for example:
 
 ```text
-?robotYawDeg=180&robotRestSh1=-1.40&robotRestEl0=2.00&robotPressSh1=-0.80&robotPressEl0=1.22
+?robotYawDeg=180&robotRestSh1=-1.40&robotRestEl0=2.00&robotPressSh1=0.00&robotPressEl0=0.00
 ```
 
 The supported URL overrides are `robotYawDeg`, `robotRestSh1`,
