@@ -15,7 +15,7 @@ const DEFAULT_PROFILE_ID = "spot-default-pose-20260821";
 // The URL parameters below override these values without editing the file:
 //   robotYawDeg, robotRestSh1, robotRestEl0, robotPressSh1, robotPressEl0,
 //   robotOffsetX, robotOffsetZ
-const EDITABLE_ROBOT_TUNING = {
+const CANONICAL_DEFAULT_PROFILE = {
     yawOffsetDeg: 75,
     restArmPose: {
         arm_sh0: 0.0,
@@ -45,15 +45,20 @@ const EDITABLE_ROBOT_TUNING = {
     }
 };
 
+// The root demo URL and the explicit tuning URL intentionally resolve through
+// this same profile. Root mode never consumes browser-local tuning state.
+const EDITABLE_ROBOT_TUNING = CANONICAL_DEFAULT_PROFILE;
+
 function readRobotTuning() {
     const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
     const cleanQueryValue = value => typeof value === "string" ? value.replace(/\\+$/, "") : value;
     const queryValue = key => cleanQueryValue(params?.get(key));
+    const explicitTuningUrl = queryValue("tune") === "1";
     let saved = {};
     if (typeof window !== "undefined") {
         try {
             const stored = JSON.parse(window.localStorage.getItem("geistSpotPoseTuning") || "{}");
-            saved = queryValue("tune") === "1" && stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
+            saved = explicitTuningUrl && stored?.profileId === DEFAULT_PROFILE_ID ? stored : {};
         } catch {
             saved = {};
         }

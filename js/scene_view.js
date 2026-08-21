@@ -5,7 +5,7 @@ import { ConvexGeometry } from "three/addons/geometries/ConvexGeometry.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
-import { RobotActor } from "./robot_actor.js?v=spot-url-backslash-r4-20260821";
+import { RobotActor } from "./robot_actor.js?v=spot-root-canonical-r5-20260821";
 
 // The Spot PLY is already Y-up. Keep one explicit root so a future alignment
 // can be changed in one place without independently rotating annotations.
