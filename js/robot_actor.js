@@ -278,7 +278,9 @@ export class RobotActor {
         this.applyArmPose(this.restArmPose);
         if (this.configured && this.objectEntries) {
             const activeTarget = this.activeTargetId;
+            const editablePose = this.editablePoseName;
             this.configure({ objectEntries: this.objectEntries, floorY: this.floorY });
+            if (editablePose) this.selectEditablePose(editablePose);
             if (activeTarget) this.setTarget(activeTarget);
         }
     }
