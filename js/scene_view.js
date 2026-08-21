@@ -270,7 +270,7 @@ export class SceneView {
         });
         panel.querySelector("[data-action=\"save\"]").addEventListener("click", () => {
             const values = readValues();
-            apply();
+            const posePositions = this.robotActor.getManualPosePositions();
             try {
                 window.localStorage.setItem("geistSpotPoseTuning", JSON.stringify({
                     robotYawDeg: values.yaw,
@@ -280,9 +280,18 @@ export class SceneView {
                     robotRestEl0: THREE.MathUtils.degToRad(values.restEl0),
                     robotPressSh1: THREE.MathUtils.degToRad(values.pressSh1),
                     robotPressEl0: THREE.MathUtils.degToRad(values.pressEl0),
-                    posePositions: this.robotActor.getManualPosePositions()
+                    posePositions
                 }));
-                status.textContent = "keyframes saved in this browser";
+                const url = new URL(window.location.href);
+                Object.entries({
+                    robotPoseStart: posePositions.start,
+                    robotPoseA: posePositions.switch_A,
+                    robotPoseB: posePositions.switch_B
+                }).forEach(([key, position]) => {
+                    if (position) url.searchParams.set(key, position.join(","));
+                });
+                window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+                status.textContent = "keyframes saved to browser + URL";
             } catch {
                 status.textContent = "save unavailable";
             }

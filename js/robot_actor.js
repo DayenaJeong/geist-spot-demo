@@ -54,12 +54,13 @@ function readRobotTuning() {
         const savedValue = Number(saved?.[key]);
         return Number.isFinite(savedValue) ? savedValue : fallback;
     };
-    const savedPosePosition = name => {
-        const value = saved?.posePositions?.[name];
-        return Array.isArray(value) && value.length === 3 && value.every(item => Number.isFinite(Number(item)))
-            ? value.map(Number)
+    const parsePosePosition = value => {
+        const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : null;
+        return values && values.length === 3 && values.every(item => Number.isFinite(Number(item)))
+            ? values.map(Number)
             : null;
     };
+    const savedPosePosition = (urlKey, name) => parsePosePosition(params?.get(urlKey)) || parsePosePosition(saved?.posePositions?.[name]);
     return {
         yawOffsetRad: THREE.MathUtils.degToRad(number("robotYawDeg", EDITABLE_ROBOT_TUNING.yawOffsetDeg)),
         restArmPose: {
@@ -75,9 +76,9 @@ function readRobotTuning() {
         positionOffsetX: number("robotOffsetX", EDITABLE_ROBOT_TUNING.positionOffsetX),
         positionOffsetZ: number("robotOffsetZ", EDITABLE_ROBOT_TUNING.positionOffsetZ),
         manualPosePositions: {
-            start: savedPosePosition("start"),
-            switch_A: savedPosePosition("switch_A"),
-            switch_B: savedPosePosition("switch_B")
+            start: savedPosePosition("robotPoseStart", "start"),
+            switch_A: savedPosePosition("robotPoseA", "switch_A"),
+            switch_B: savedPosePosition("robotPoseB", "switch_B")
         }
     };
 }
