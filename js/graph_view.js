@@ -80,7 +80,7 @@ export class GraphView {
     }
 
     styleRelation(relation) {
-        const labelLift = relation.state === "removed" ? -14 : 14;
+        const labelLift = relation.state === "removed" ? -24 : 24;
         const common = {
             id: relation.id,
             from: relation.source,
@@ -93,8 +93,7 @@ export class GraphView {
                 size: 12,
                 align: "horizontal",
                 vadjust: labelLift,
-                strokeWidth: 4,
-                strokeColor: "#fbfdfe",
+                strokeWidth: 0,
                 color: "#526879",
                 background: "none"
             }
@@ -122,7 +121,7 @@ export class GraphView {
                 font: { ...common.font, color: "#207346", background: "none" },
                 width: 3,
                 dashes: false,
-                arrows: { to: { enabled: true, scaleFactor: 1.0 } }
+                arrows: { to: { enabled: true, scaleFactor: 1.15 } }
             };
         }
 
@@ -134,7 +133,7 @@ export class GraphView {
             font: { ...common.font, color: "#23658e", background: "none" },
             width: 2.5,
             dashes: false,
-            arrows: { to: { enabled: true, scaleFactor: 1.0 } }
+            arrows: { to: { enabled: true, scaleFactor: 1.15 } }
         };
     }
 
