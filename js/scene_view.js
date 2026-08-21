@@ -270,7 +270,6 @@ export class SceneView {
         });
         panel.querySelector("[data-action=\"save\"]").addEventListener("click", () => {
             const values = readValues();
-            apply();
             try {
                 window.localStorage.setItem("geistSpotPoseTuning", JSON.stringify({
                     robotYawDeg: values.yaw,
