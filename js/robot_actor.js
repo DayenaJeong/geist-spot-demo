@@ -64,7 +64,8 @@ function readRobotTuning() {
         }
     }
     const number = (key, fallback) => {
-        const urlValue = Number(queryValue(key));
+        const rawUrlValue = queryValue(key);
+        const urlValue = rawUrlValue === null || rawUrlValue === "" ? NaN : Number(rawUrlValue);
         if (Number.isFinite(urlValue)) return urlValue;
         const savedValue = Number(saved?.[key]);
         return Number.isFinite(savedValue) ? savedValue : fallback;
