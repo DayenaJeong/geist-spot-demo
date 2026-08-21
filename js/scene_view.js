@@ -175,8 +175,8 @@ export class SceneView {
             </div>
             <div class="robot-tuning-grid">
                 <label>Body yaw <output data-value="yaw"></output><input data-tuning="yaw" type="range" min="-180" max="180" step="1"></label>
-                <label>Position X <output data-value="offsetX"></output><input data-tuning="offsetX" type="range" min="-1.5" max="1.5" step="0.01"></label>
-                <label>Position Z <output data-value="offsetZ"></output><input data-tuning="offsetZ" type="range" min="-1.5" max="1.5" step="0.01"></label>
+                <label>Position X <output data-value="offsetX"></output><input data-tuning="offsetX" type="range" min="-10" max="10" step="0.01"></label>
+                <label>Position Z <output data-value="offsetZ"></output><input data-tuning="offsetZ" type="range" min="-10" max="10" step="0.01"></label>
                 <label>Rest shoulder <output data-value="restSh1"></output><input data-tuning="restSh1" type="range" min="-180" max="30" step="1"></label>
                 <label>Rest elbow <output data-value="restEl0"></output><input data-tuning="restEl0" type="range" min="0" max="180" step="1"></label>
                 <label>Press shoulder <output data-value="pressSh1"></output><input data-tuning="pressSh1" type="range" min="-180" max="30" step="1"></label>
