@@ -9,9 +9,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const ROS_TO_THREE = new THREE.Quaternion(-0.5, -0.5, -0.5, 0.5);
 const UP = new THREE.Vector3(0, 1, 0);
 const SPOT_BODY_LENGTH = 0.87244;
-// The rendered assembly presents the body forward axis with this yaw offset.
-// Keep the arm mount and the body aimed at the active switch.
-const MODEL_FORWARD_YAW_OFFSET = -Math.PI / 2;
+// The URDF ROS x-forward axis maps to the rendered Three.js +z axis.
+// The target-facing yaw therefore needs no additional visual offset.
 
 const JOINT_AXES = {
     arm_sh0: new THREE.Vector3(0, 0, 1),
@@ -210,7 +209,7 @@ export class RobotActor {
             direction.normalize();
             return {
                 position: ground,
-                yaw: Math.atan2(direction.x, direction.z) + MODEL_FORWARD_YAW_OFFSET
+                yaw: Math.atan2(direction.x, direction.z)
             };
         };
 
