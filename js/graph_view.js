@@ -81,16 +81,13 @@ export class GraphView {
 
     styleRelation(relation) {
         const labelLift = relation.state === "removed" ? -14 : 14;
-        const curve = relation.state === "removed"
-            ? { type: "curvedCW", roundness: 0.34 }
-            : { type: "curvedCCW", roundness: 0.34 };
         const common = {
             id: relation.id,
             from: relation.source,
             to: relation.target,
             relationState: relation.state,
             interaction: relation.relation,
-            smooth: curve,
+            smooth: false,
             font: {
                 face: "Segoe UI, Arial, sans-serif",
                 size: 11,
