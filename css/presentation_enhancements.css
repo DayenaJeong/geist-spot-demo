@@ -301,3 +301,110 @@ body[data-presentation-mode="true"] .scene-debug-overlay {
     letter-spacing: 0.03em;
     pointer-events: none;
 }
+
+/* Optional presentation-only Spot pose editor (?tune=1). */
+.robot-tuning-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 12;
+    display: grid;
+    gap: 8px;
+    width: min(292px, calc(100% - 24px));
+    padding: 11px 12px 10px;
+    border: 1px solid rgba(21, 61, 90, 0.28);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 6px 22px rgba(23, 51, 72, 0.2);
+    color: var(--navy);
+    font-size: 10px;
+    pointer-events: auto;
+}
+
+.robot-tuning-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+}
+
+.robot-tuning-heading strong {
+    color: var(--blue);
+    font-size: 10px;
+    letter-spacing: 0.09em;
+}
+
+.robot-tuning-heading span,
+.robot-tuning-panel p,
+.robot-tuning-actions span {
+    color: var(--ink-soft);
+    font-size: 10px;
+}
+
+.robot-tuning-grid {
+    display: grid;
+    gap: 6px;
+}
+
+.robot-tuning-grid label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 8px;
+    color: var(--ink-soft);
+    font-size: 10px;
+}
+
+.robot-tuning-grid output {
+    color: var(--navy);
+    font: 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-align: right;
+}
+
+.robot-tuning-grid input[type="range"] {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 15px;
+    accent-color: var(--blue);
+    cursor: ew-resize;
+}
+
+.robot-tuning-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.robot-tuning-actions button {
+    min-height: 25px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 8px;
+    color: var(--navy);
+    background: var(--surface);
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.robot-tuning-actions button:hover,
+.robot-tuning-actions button:focus-visible {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+    outline: none;
+}
+
+.robot-tuning-panel p {
+    margin: 0;
+    line-height: 1.3;
+}
+
+@media (max-width: 700px) {
+    .robot-tuning-panel {
+        top: 8px;
+        left: 8px;
+        width: min(270px, calc(100% - 16px));
+    }
+}

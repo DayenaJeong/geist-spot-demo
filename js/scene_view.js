@@ -149,7 +149,106 @@ export class SceneView {
         this.renderer.domElement.addEventListener("pointerleave", () => this.setHoveredObject(null));
         window.addEventListener("resize", () => this.resize());
 
+        this.installRobotTuningPanel();
         if (this.debugMode) this.createDebugOverlay();
+    }
+
+    installRobotTuningPanel() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("tune") !== "1" && params.get("development") !== "1") return;
+        const stage = this.container.closest(".scene-stage");
+        if (!stage) return;
+
+        const panel = document.createElement("section");
+        panel.className = "robot-tuning-panel";
+        panel.setAttribute("aria-label", "Spot pose tuning");
+        panel.innerHTML = `
+            <div class="robot-tuning-heading">
+                <strong>SPOT POSE TUNING</strong>
+                <span>drag sliders</span>
+            </div>
+            <div class="robot-tuning-grid">
+                <label>Body yaw <output data-value="yaw"></output><input data-tuning="yaw" type="range" min="-180" max="180" step="1"></label>
+                <label>Rest shoulder <output data-value="restSh1"></output><input data-tuning="restSh1" type="range" min="-180" max="30" step="1"></label>
+                <label>Rest elbow <output data-value="restEl0"></output><input data-tuning="restEl0" type="range" min="0" max="180" step="1"></label>
+                <label>Press shoulder <output data-value="pressSh1"></output><input data-tuning="pressSh1" type="range" min="-180" max="30" step="1"></label>
+                <label>Press elbow <output data-value="pressEl0"></output><input data-tuning="pressEl0" type="range" min="0" max="180" step="1"></label>
+            </div>
+            <div class="robot-tuning-actions">
+                <button type="button" data-action="reset">Reset</button>
+                <button type="button" data-action="copy">Copy URL</button>
+                <span data-role="status" aria-live="polite"></span>
+            </div>
+            <p>Presentation-only controls. Dragging changes the Spot pose, not the scene or graph.</p>
+        `;
+        stage.appendChild(panel);
+
+        const defaults = this.robotActor.getTuning();
+        const inputs = Object.fromEntries([...panel.querySelectorAll("[data-tuning]")].map(input => [input.dataset.tuning, input]));
+        const outputs = Object.fromEntries([...panel.querySelectorAll("[data-value]")].map(output => [output.dataset.value, output]));
+        const status = panel.querySelector("[data-role=\"status\"]");
+
+        const setInputValues = tuning => {
+            inputs.yaw.value = Math.round(tuning.yawOffsetDeg);
+            inputs.restSh1.value = Math.round(THREE.MathUtils.radToDeg(tuning.restSh1));
+            inputs.restEl0.value = Math.round(THREE.MathUtils.radToDeg(tuning.restEl0));
+            inputs.pressSh1.value = Math.round(THREE.MathUtils.radToDeg(tuning.pressSh1));
+            inputs.pressEl0.value = Math.round(THREE.MathUtils.radToDeg(tuning.pressEl0));
+        };
+
+        const readValues = () => ({
+            yaw: Number(inputs.yaw.value),
+            restSh1: Number(inputs.restSh1.value),
+            restEl0: Number(inputs.restEl0.value),
+            pressSh1: Number(inputs.pressSh1.value),
+            pressEl0: Number(inputs.pressEl0.value)
+        });
+
+        const updateLabels = values => {
+            outputs.yaw.value = `${values.yaw}°`;
+            outputs.restSh1.value = `${values.restSh1}°`;
+            outputs.restEl0.value = `${values.restEl0}°`;
+            outputs.pressSh1.value = `${values.pressSh1}°`;
+            outputs.pressEl0.value = `${values.pressEl0}°`;
+        };
+
+        const apply = () => {
+            const values = readValues();
+            this.robotActor.setTuning({
+                yawOffsetDeg: values.yaw,
+                restSh1: THREE.MathUtils.degToRad(values.restSh1),
+                restEl0: THREE.MathUtils.degToRad(values.restEl0),
+                pressSh1: THREE.MathUtils.degToRad(values.pressSh1),
+                pressEl0: THREE.MathUtils.degToRad(values.pressEl0)
+            });
+            updateLabels(values);
+            const url = new URL(window.location.href);
+            url.searchParams.set("tune", "1");
+            url.searchParams.set("robotYawDeg", String(values.yaw));
+            url.searchParams.set("robotRestSh1", THREE.MathUtils.degToRad(values.restSh1).toFixed(4));
+            url.searchParams.set("robotRestEl0", THREE.MathUtils.degToRad(values.restEl0).toFixed(4));
+            url.searchParams.set("robotPressSh1", THREE.MathUtils.degToRad(values.pressSh1).toFixed(4));
+            url.searchParams.set("robotPressEl0", THREE.MathUtils.degToRad(values.pressEl0).toFixed(4));
+            window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+        };
+
+        Object.values(inputs).forEach(input => input.addEventListener("input", apply));
+        panel.querySelector("[data-action=\"reset\"]").addEventListener("click", () => {
+            setInputValues(defaults);
+            apply();
+            status.textContent = "reset";
+        });
+        panel.querySelector("[data-action=\"copy\"]").addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                status.textContent = "URL copied";
+            } catch {
+                status.textContent = "copy unavailable";
+            }
+        });
+
+        setInputValues(this.robotActor.getTuning());
+        updateLabels(readValues());
     }
 
     async loadManifest(manifest) {

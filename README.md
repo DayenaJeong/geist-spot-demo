@@ -29,3 +29,24 @@ Open the address printed by the local server.
 
 All runtime asset references are relative, so the site works at a domain root
 and under a GitHub Pages project subpath.
+
+## Manual robot-pose tuning
+
+To tune the presentation without changing the scene or evidence logic, edit
+`js/robot_actor.js` at `EDITABLE_ROBOT_TUNING`. Angles are radians. You can
+also test values directly in the URL, for example:
+
+```text
+?robotYawDeg=180&robotRestSh1=-1.40&robotRestEl0=2.00&robotPressSh1=-0.80&robotPressEl0=1.22
+```
+
+The supported URL overrides are `robotYawDeg`, `robotRestSh1`,
+`robotRestEl0`, `robotPressSh1`, and `robotPressEl0`.
+
+To edit the pose directly in the browser, open the demo with `?tune=1`:
+`https://dayenajeong.github.io/spot-functional-relation-demo/?tune=1`
+(or append `?tune=1` to a local URL). Drag the five sliders for body yaw,
+rest-arm shoulder/elbow, and press-arm shoulder/elbow. Changes apply live;
+`Copy URL` preserves the selected pose in a shareable URL, and `Reset` returns
+to the pose loaded at page start. This panel changes only the presentation
+actor and does not modify the point cloud, graph, or evidence sequence.

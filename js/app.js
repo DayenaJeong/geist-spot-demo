@@ -3,8 +3,8 @@
 
 import { loadDemoData, loadEvidenceManifest, loadSceneManifest } from "./data_adapter.js";
 import { GraphView } from "./graph_view.js";
-import { SceneView } from "./scene_view.js?v=presentation-polish-20260818-front-facing-20260821";
-import { StateController } from "./state_controller.js?v=presentation-polish-20260818-front-facing-20260821";
+import { SceneView } from "./scene_view.js?v=presentation-polish-20260818-manual-pose-tuning-20260821";
+import { StateController } from "./state_controller.js?v=presentation-polish-20260818-manual-pose-tuning-20260821";
 import { setupAnnotationMode } from "./annotation_mode.js";
 
 import { installCameraCapture } from "./camera_capture.js";

@@ -9,8 +9,54 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const ROS_TO_THREE = new THREE.Quaternion(-0.5, -0.5, -0.5, 0.5);
 const UP = new THREE.Vector3(0, 1, 0);
 const SPOT_BODY_LENGTH = 0.87244;
-// The assembled visual body presents its front along rendered -z.
-// Add pi so the actual Spot front and arm mount face the active switch.
+
+// EDIT THIS BLOCK to tune the presentation pose yourself.  Angles are radians.
+// The URL parameters below override these values without editing the file:
+//   robotYawDeg, robotRestSh1, robotRestEl0, robotPressSh1, robotPressEl0
+const EDITABLE_ROBOT_TUNING = {
+    yawOffsetDeg: 0,
+    restArmPose: {
+        arm_sh0: 0.0,
+        arm_sh1: -1.40,
+        arm_el0: 2.00,
+        arm_el1: 0.0,
+        arm_wr0: 0.0,
+        arm_wr1: 0.0,
+        arm_f1x: -0.55
+    },
+    pressArmPose: {
+        arm_sh0: 0.0,
+        arm_sh1: -0.80,
+        arm_el0: 1.22,
+        arm_el1: 0.0,
+        arm_wr0: 0.0,
+        arm_wr1: 0.0,
+        arm_f1x: -0.30
+    }
+};
+
+function readRobotTuning() {
+    const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
+    const number = (key, fallback) => {
+        const value = Number(params?.get(key));
+        return Number.isFinite(value) ? value : fallback;
+    };
+    return {
+        yawOffsetRad: THREE.MathUtils.degToRad(number("robotYawDeg", EDITABLE_ROBOT_TUNING.yawOffsetDeg)),
+        restArmPose: {
+            ...EDITABLE_ROBOT_TUNING.restArmPose,
+            arm_sh1: number("robotRestSh1", EDITABLE_ROBOT_TUNING.restArmPose.arm_sh1),
+            arm_el0: number("robotRestEl0", EDITABLE_ROBOT_TUNING.restArmPose.arm_el0)
+        },
+        pressArmPose: {
+            ...EDITABLE_ROBOT_TUNING.pressArmPose,
+            arm_sh1: number("robotPressSh1", EDITABLE_ROBOT_TUNING.pressArmPose.arm_sh1),
+            arm_el0: number("robotPressEl0", EDITABLE_ROBOT_TUNING.pressArmPose.arm_el0)
+        }
+    };
+}
+
+const ACTIVE_ROBOT_TUNING = readRobotTuning();
 
 const JOINT_AXES = {
     arm_sh0: new THREE.Vector3(0, 0, 1),
@@ -20,30 +66,6 @@ const JOINT_AXES = {
     arm_wr0: new THREE.Vector3(0, 1, 0),
     arm_wr1: new THREE.Vector3(1, 0, 0),
     arm_f1x: new THREE.Vector3(0, 1, 0)
-};
-
-const REST_ARM_POSE = {
-    arm_sh0: 0.0,
-    // Raised, bent presentation pose: the shoulder sits above the body and
-    // the forearm points forward instead of hanging toward the floor.
-    arm_sh1: -1.40,
-    arm_el0: 2.00,
-    arm_el1: 0.0,
-    arm_wr0: 0.0,
-    arm_wr1: 0.0,
-    arm_f1x: -0.55
-};
-
-const PRESS_ARM_POSE = {
-    arm_sh0: 0.0,
-    // Extend the forearm toward the switch while keeping the gripper level
-    // with the raised presentation pose.
-    arm_sh1: -0.80,
-    arm_el0: 1.22,
-    arm_el1: 0.0,
-    arm_wr0: 0.0,
-    arm_wr1: 0.0,
-    arm_f1x: -0.30
 };
 
 function clamp(value, min, max) {
@@ -102,8 +124,9 @@ export class RobotActor {
         this.pressAnimation = null;
         this.motionResolve = null;
         this.currentPose = null;
-        this.restArmPose = { ...REST_ARM_POSE };
-        this.pressArmPose = { ...PRESS_ARM_POSE };
+        this.yawOffsetRad = ACTIVE_ROBOT_TUNING.yawOffsetRad;
+        this.restArmPose = { ...ACTIVE_ROBOT_TUNING.restArmPose };
+        this.pressArmPose = { ...ACTIVE_ROBOT_TUNING.pressArmPose };
 
         this.loadModel();
     }
@@ -162,7 +185,32 @@ export class RobotActor {
         return pose;
     }
 
+    getTuning() {
+        return {
+            yawOffsetDeg: THREE.MathUtils.radToDeg(this.yawOffsetRad),
+            restSh1: this.restArmPose.arm_sh1,
+            restEl0: this.restArmPose.arm_el0,
+            pressSh1: this.pressArmPose.arm_sh1,
+            pressEl0: this.pressArmPose.arm_el0
+        };
+    }
+
+    setTuning({ yawOffsetDeg, restSh1, restEl0, pressSh1, pressEl0 } = {}) {
+        if (Number.isFinite(yawOffsetDeg)) this.yawOffsetRad = THREE.MathUtils.degToRad(yawOffsetDeg);
+        if (Number.isFinite(restSh1)) this.restArmPose.arm_sh1 = restSh1;
+        if (Number.isFinite(restEl0)) this.restArmPose.arm_el0 = restEl0;
+        if (Number.isFinite(pressSh1)) this.pressArmPose.arm_sh1 = pressSh1;
+        if (Number.isFinite(pressEl0)) this.pressArmPose.arm_el0 = pressEl0;
+        this.applyArmPose(this.restArmPose);
+        if (this.configured && this.objectEntries) {
+            const activeTarget = this.activeTargetId;
+            this.configure({ objectEntries: this.objectEntries, floorY: this.floorY });
+            if (activeTarget) this.setTarget(activeTarget);
+        }
+    }
+
     configure({ objectEntries, floorY = 0 } = {}) {
+        this.objectEntries = objectEntries;
         const entryA = objectEntries?.get("switch_A");
         const entryB = objectEntries?.get("switch_B");
         const lamp = objectEntries?.get("lamp");
@@ -209,7 +257,7 @@ export class RobotActor {
             direction.normalize();
             return {
                 position: ground,
-                yaw: Math.atan2(direction.x, direction.z) + Math.PI
+                yaw: Math.atan2(direction.x, direction.z) + this.yawOffsetRad
             };
         };
 
