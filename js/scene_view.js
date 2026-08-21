@@ -77,6 +77,7 @@ export class SceneView {
         this.debugOverlay = null;
         this.robotActor = new RobotActor();
         this.scene.add(this.robotActor.root);
+        this.scene.add(this.robotActor.targetMarker);
         this.setSceneState("loading");
 
         try {

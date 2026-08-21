@@ -1,13 +1,44 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 /**
- * Presentation-only Spot proxy.
- *
- * The actor is deliberately procedural and illustrative: it interpolates
- * between scene-derived poses and shows a restrained press cue. It does not
- * represent measured Spot telemetry or a physics simulation.
+ * Presentation-only actor backed by the real visual Spot + Arm asset from
+ * rai-opensource/spot_description.  This module contains no physics,
+ * telemetry, or replacement primitive robot geometry.
  */
+const ROS_TO_THREE = new THREE.Quaternion(-0.5, -0.5, -0.5, 0.5);
 const UP = new THREE.Vector3(0, 1, 0);
+const SPOT_BODY_LENGTH = 0.87244;
+
+const JOINT_AXES = {
+    arm_sh0: new THREE.Vector3(0, 0, 1),
+    arm_sh1: new THREE.Vector3(0, 1, 0),
+    arm_el0: new THREE.Vector3(0, 1, 0),
+    arm_el1: new THREE.Vector3(1, 0, 0),
+    arm_wr0: new THREE.Vector3(0, 1, 0),
+    arm_wr1: new THREE.Vector3(1, 0, 0),
+    arm_f1x: new THREE.Vector3(0, 1, 0)
+};
+
+const REST_ARM_POSE = {
+    arm_sh0: 0.0,
+    arm_sh1: 0.25,
+    arm_el0: 1.05,
+    arm_el1: 0.0,
+    arm_wr0: 0.0,
+    arm_wr1: 0.0,
+    arm_f1x: -0.55
+};
+
+const PRESS_ARM_POSE = {
+    arm_sh0: 0.0,
+    arm_sh1: 0.18,
+    arm_el0: 1.10,
+    arm_el1: 0.0,
+    arm_wr0: 0.0,
+    arm_wr1: 0.0,
+    arm_f1x: -0.30
+};
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -18,89 +49,26 @@ function easeInOut(value) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function box(width, height, depth, material, position = [0, 0, 0]) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
-    mesh.position.set(...position);
-    mesh.renderOrder = 55;
-    return mesh;
+function clonePose(pose) {
+    return {
+        position: pose.position.clone(),
+        yaw: pose.yaw
+    };
 }
 
 export class RobotActor {
     constructor() {
         this.root = new THREE.Group();
-        this.root.name = "illustrative-spot-actor";
+        this.root.name = "spot-with-arm-actor";
         this.root.visible = false;
         this.root.renderOrder = 55;
 
+        // Kept separate from the robot root so the world-space target ring is
+        // not rotated or scaled by the robot's locomotion pose.
         this.targetMarker = new THREE.Group();
         this.targetMarker.name = "spot-interaction-target";
         this.targetMarker.visible = false;
         this.targetMarker.renderOrder = 58;
-
-        this.targets = {};
-        this.activeTargetId = null;
-        this.motion = null;
-        this.pressAnimation = null;
-        this.motionResolve = null;
-        this.configured = false;
-        this.floorY = 0;
-        this.robotScale = 1;
-        this.currentPose = null;
-        this.legGroups = [];
-
-        this.buildProxy();
-    }
-
-    buildProxy() {
-        const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x172f43, transparent: true, opacity: 0.98, depthTest: false });
-        const panelMaterial = new THREE.MeshBasicMaterial({ color: 0x3f8fc4, transparent: true, opacity: 0.98, depthTest: false });
-        const legMaterial = new THREE.MeshBasicMaterial({ color: 0x6b7f8f, transparent: true, opacity: 0.98, depthTest: false });
-        const jointMaterial = new THREE.MeshBasicMaterial({ color: 0xd5e1e8, transparent: true, opacity: 0.98, depthTest: false });
-        const accentMaterial = new THREE.MeshBasicMaterial({ color: 0xf0b429, transparent: true, opacity: 0.98, depthTest: false });
-
-        const body = box(0.34, 0.16, 0.24, bodyMaterial, [0, 0.28, 0]);
-        const topPanel = box(0.20, 0.055, 0.15, panelMaterial, [0, 0.39, 0]);
-        const head = box(0.14, 0.10, 0.12, bodyMaterial, [0, 0.35, 0.15]);
-        const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), accentMaterial);
-        sensor.position.set(0, 0.36, 0.225);
-        sensor.renderOrder = 57;
-        this.root.add(body, topPanel, head, sensor);
-
-        const legOffsets = [
-            [-1, -1], [1, -1], [-1, 1], [1, 1]
-        ];
-        legOffsets.forEach(([side, front], index) => {
-            const leg = new THREE.Group();
-            leg.position.set(side * 0.125, 0.22, front * 0.075);
-            leg.name = `spot-leg-${index + 1}`;
-            const upper = box(0.045, 0.13, 0.045, legMaterial, [0, -0.065, 0]);
-            const lower = box(0.04, 0.11, 0.04, jointMaterial, [side * 0.025, -0.16, front * 0.012]);
-            const foot = box(0.075, 0.035, 0.095, bodyMaterial, [side * 0.025, -0.235, front * 0.018]);
-            leg.add(upper, lower, foot);
-            this.root.add(leg);
-            this.legGroups.push(leg);
-        });
-
-        const pressCueMaterial = new THREE.LineBasicMaterial({
-            color: 0xf0b429,
-            transparent: true,
-            opacity: 0.95,
-            depthTest: false
-        });
-        const pressCueGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 0, 0.42)
-        ]);
-        this.pressCue = new THREE.Group();
-        this.pressCue.name = "spot-press-cue";
-        this.pressCue.position.set(0, 0.335, 0.14);
-        this.pressCue.add(new THREE.Line(pressCueGeometry, pressCueMaterial));
-        const pressTip = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), accentMaterial);
-        pressTip.position.set(0, 0, 0.42);
-        this.pressCue.add(pressTip);
-        this.pressCue.visible = false;
-        this.root.add(this.pressCue);
-
         const ringMaterial = new THREE.MeshBasicMaterial({
             color: 0xf0b429,
             transparent: true,
@@ -113,6 +81,79 @@ export class RobotActor {
         ring.renderOrder = 58;
         this.targetMarker.add(ring);
         this.targetRing = ring;
+
+        this.loader = new GLTFLoader();
+        this.modelRoot = null;
+        this.joints = new Map();
+        this.modelReady = false;
+        this.loadError = null;
+        this.configured = false;
+        this.floorY = 0;
+        this.robotScale = 1;
+        this.targets = {};
+        this.activeTargetId = null;
+        this.motion = null;
+        this.pressAnimation = null;
+        this.motionResolve = null;
+        this.currentPose = null;
+        this.restArmPose = { ...REST_ARM_POSE };
+        this.pressArmPose = { ...PRESS_ARM_POSE };
+
+        this.loadModel();
+    }
+
+    loadModel() {
+        const assetUrl = new URL("../assets/spot/spot_with_arm.glb", import.meta.url).toString();
+        this.loader.load(
+            assetUrl,
+            gltf => {
+                this.modelRoot = gltf.scene;
+                this.modelRoot.name = "rai-spot-with-arm-visual";
+                this.modelRoot.quaternion.copy(ROS_TO_THREE);
+                this.modelRoot.traverse(object => {
+                    if (!object.isMesh) return;
+                    object.castShadow = false;
+                    object.receiveShadow = false;
+                    object.frustumCulled = true;
+                    object.renderOrder = 50;
+                });
+                this.root.add(this.modelRoot);
+                this.modelRoot.traverse(object => {
+                    if (!object.name || !JOINT_AXES[object.name]) return;
+                    this.joints.set(object.name, object);
+                });
+                this.modelReady = true;
+                this.applyArmPose(this.restArmPose);
+                this.updateVisibility();
+            },
+            undefined,
+            error => {
+                this.loadError = error;
+                this.modelReady = false;
+                console.error("Spot visual asset failed to load; no procedural fallback is used.", error);
+            }
+        );
+    }
+
+    updateVisibility() {
+        this.root.visible = Boolean(this.configured && this.modelReady);
+    }
+
+    applyArmPose(pose) {
+        Object.entries(JOINT_AXES).forEach(([name, axis]) => {
+            const joint = this.joints.get(name);
+            if (!joint) return;
+            const angle = Number(pose[name] ?? 0);
+            joint.quaternion.setFromAxisAngle(axis, angle);
+        });
+    }
+
+    interpolateArmPose(amount) {
+        const pose = {};
+        Object.keys(this.restArmPose).forEach(name => {
+            pose[name] = THREE.MathUtils.lerp(this.restArmPose[name], this.pressArmPose[name], amount);
+        });
+        return pose;
     }
 
     configure({ objectEntries, floorY = 0 } = {}) {
@@ -145,8 +186,12 @@ export class RobotActor {
             entryB.extent?.z || 0,
             0.08
         );
-        const desiredBodyWidth = clamp(switchExtent * 3.2, 0.24, 0.48);
-        this.robotScale = desiredBodyWidth / 0.34;
+
+        // Keep the source model's recognizable proportions while fitting the
+        // controlled demo area.  The scale is a scene presentation scale,
+        // not a claim about measured robot placement.
+        const desiredBodyLength = clamp(switchExtent * 6.4, 0.62, 0.78);
+        this.robotScale = desiredBodyLength / SPOT_BODY_LENGTH;
         this.floorY = Number.isFinite(Number(floorY)) ? Number(floorY) : 0;
 
         const makePose = (position, lookAt) => {
@@ -162,7 +207,7 @@ export class RobotActor {
             };
         };
 
-        const switchDistance = clamp(0.52 * this.robotScale, 0.42, 0.72);
+        const switchDistance = clamp(0.84 * this.robotScale, 0.56, 0.78);
         const poseA = makePose(centerA.clone().addScaledVector(towardLamp, switchDistance), centerA);
         const poseB = makePose(centerB.clone().addScaledVector(towardLamp, switchDistance), centerB);
         const perpendicular = new THREE.Vector3(-towardLamp.z, 0, towardLamp.x);
@@ -176,10 +221,11 @@ export class RobotActor {
         this.targetMarker.scale.setScalar(this.robotScale);
         this.root.position.copy(startPose.position);
         this.root.rotation.y = startPose.yaw;
-        this.currentPose = { position: startPose.position.clone(), yaw: startPose.yaw };
+        this.currentPose = clonePose(startPose);
         this.configured = true;
-        this.root.visible = true;
+        this.applyArmPose(this.restArmPose);
         this.setTarget(null);
+        this.updateVisibility();
         return true;
     }
 
@@ -194,18 +240,19 @@ export class RobotActor {
         if (!target) return;
         this.targetMarker.position.copy(target.position);
         this.targetMarker.position.y = this.floorY + 0.012;
+        this.targetMarker.scale.setScalar(this.robotScale);
     }
 
     reset() {
         this.cancelAnimation();
         if (!this.configured) return;
         const start = this.targets.start;
-        this.root.visible = true;
         this.root.position.copy(start.position);
         this.root.rotation.y = start.yaw;
-        this.currentPose = { position: start.position.clone(), yaw: start.yaw };
-        this.pressCue.visible = false;
+        this.currentPose = clonePose(start);
+        this.applyArmPose(this.restArmPose);
         this.setTarget(null);
+        this.updateVisibility();
     }
 
     cancelAnimation() {
@@ -213,11 +260,11 @@ export class RobotActor {
         this.motionResolve = null;
         this.motion = null;
         this.pressAnimation = null;
-        this.pressCue.visible = false;
+        this.applyArmPose(this.restArmPose);
     }
 
     moveTo(targetName, { duration = 1200 } = {}) {
-        if (!this.configured) return Promise.resolve(false);
+        if (!this.configured || !this.modelReady) return Promise.resolve(false);
         const target = this.targets[targetName] || this.targets.start;
         this.cancelAnimation();
         const start = {
@@ -231,10 +278,9 @@ export class RobotActor {
         if (start.position.distanceTo(end.position) < 1e-4 && Math.abs(start.yaw - end.yaw) < 1e-4) {
             this.root.position.copy(end.position);
             this.root.rotation.y = end.yaw;
-            this.currentPose = { position: end.position.clone(), yaw: end.yaw };
+            this.currentPose = clonePose(end);
             return Promise.resolve(true);
         }
-        this.pressCue.visible = false;
         this.motion = {
             started: performance.now(),
             duration: Math.max(Number(duration) || 1, 1),
@@ -247,49 +293,53 @@ export class RobotActor {
     }
 
     press(targetName, { duration = 760 } = {}) {
-        if (!this.configured) return Promise.resolve(false);
+        if (!this.configured || !this.modelReady) return Promise.resolve(false);
         this.setTarget(targetName);
         this.cancelAnimation();
         this.pressAnimation = {
             started: performance.now(),
             duration: Math.max(Number(duration) || 1, 1)
         };
-        this.pressCue.visible = true;
         return new Promise(resolve => {
             this.motionResolve = resolve;
         });
     }
 
     update(now) {
-        if (!this.configured) return;
+        if (!this.configured || !this.modelReady) return;
+
         if (this.motion) {
             const animation = this.motion;
             const progress = Math.min((now - animation.started) / animation.duration, 1);
             const eased = easeInOut(progress);
             this.root.position.lerpVectors(animation.start.position, animation.end.position, eased);
-            this.root.position.y += Math.sin(progress * Math.PI) * 0.025 * this.robotScale;
+            this.root.position.y += Math.sin(progress * Math.PI) * 0.018 * this.robotScale;
             this.root.rotation.y = THREE.MathUtils.lerp(animation.start.yaw, animation.end.yaw, eased);
-            this.animateLegs(progress);
             if (progress >= 1) {
                 this.root.position.copy(animation.end.position);
-                this.currentPose = { position: animation.end.position.clone(), yaw: animation.end.yaw };
+                this.root.rotation.y = animation.end.yaw;
+                this.currentPose = clonePose(animation.end);
                 const resolve = this.motionResolve;
                 this.motionResolve = null;
                 this.motion = null;
                 resolve?.(true);
             }
-        } else {
-            this.animateLegs(0);
         }
 
         if (this.pressAnimation) {
             const animation = this.pressAnimation;
             const progress = Math.min((now - animation.started) / animation.duration, 1);
-            const pulse = progress < 0.5 ? easeInOut(progress * 2) : easeInOut((1 - progress) * 2);
-            this.pressCue.scale.set(1, 1, 0.46 + pulse * 0.54);
-            this.pressCue.visible = true;
+            let amount;
+            if (progress < 0.28) {
+                amount = easeInOut(progress / 0.28);
+            } else if (progress < 0.68) {
+                amount = 1;
+            } else {
+                amount = easeInOut((1 - progress) / 0.32);
+            }
+            this.applyArmPose(this.interpolateArmPose(amount));
             if (progress >= 1) {
-                this.pressCue.visible = false;
+                this.applyArmPose(this.restArmPose);
                 this.pressAnimation = null;
                 const resolve = this.motionResolve;
                 this.motionResolve = null;
@@ -301,14 +351,5 @@ export class RobotActor {
             const pulse = 1 + Math.sin(now * 0.006) * 0.08;
             this.targetMarker.scale.setScalar(this.robotScale * pulse);
         }
-    }
-
-    animateLegs(progress) {
-        const walking = Boolean(this.motion);
-        const phase = walking ? Math.sin(progress * Math.PI * 8) * 0.16 : 0;
-        this.legGroups.forEach((leg, index) => {
-            const sign = index % 2 === 0 ? 1 : -1;
-            leg.rotation.z = phase * sign;
-        });
     }
 }

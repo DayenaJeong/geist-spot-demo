@@ -10,12 +10,14 @@ verification using Spot, a 3D scene view, and evidence-grounded graph updates.
 - Click graph nodes or 3D objects to synchronize selection.
 - Use Before Verification, After Switch A, and After Switch B to inspect states.
 - Use Auto Demo to play the approved evidence sequence without reloading.
-- Auto Demo includes a lightweight illustrative Spot proxy that walks to each
-  switch and shows a short press cue before the existing graph update.
+- Auto Demo includes the upstream visual Spot-with-Arm asset, moves it to
+  each switch, and animates the real arm/gripper visual before the existing
+  graph update.
 
-The proxy is presentation-only; it is not a measured Spot trajectory or a
+The model is presentation-only; it is not measured Spot telemetry or a
 physics simulation. The existing point cloud, graph states, evidence videos,
-and object-selection behavior remain unchanged.
+and object-selection behavior remain unchanged. The model source and
+MIT/BSD notices are included under assets/spot/.
 
 ## Run locally
 

@@ -1,0 +1,535 @@
+{
+  "source_repo": "https://github.com/rai-opensource/spot_description",
+  "source_commit": "156d1802bfb117f219dbfce7597d283d5fabc968",
+  "license": "MIT + BSD 3-Clause (see LICENSES.txt)",
+  "urdf_files": [
+    "spot_description/urdf/spot_macro.xacro",
+    "spot_description/urdf/spot_arm_macro.urdf"
+  ],
+  "visual_mesh_directories": [
+    "spot_description/meshes/base/visual",
+    "spot_description/meshes/arm/visual"
+  ],
+  "visual_links": [
+    "body",
+    "front_left_hip",
+    "front_left_upper_leg",
+    "front_left_lower_leg",
+    "front_right_hip",
+    "front_right_upper_leg",
+    "front_right_lower_leg",
+    "rear_left_hip",
+    "rear_left_upper_leg",
+    "rear_left_lower_leg",
+    "rear_right_hip",
+    "rear_right_upper_leg",
+    "rear_right_lower_leg",
+    "arm_link_sh0",
+    "arm_link_sh1",
+    "arm_link_hr0",
+    "arm_link_el0",
+    "arm_link_el1",
+    "arm_link_wr0",
+    "arm_link_wr1",
+    "arm_link_fngr"
+  ],
+  "joints": [
+    {
+      "name": "base_link_joint",
+      "type": "fixed",
+      "parent": "body",
+      "child": "base_link",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_rail_joint",
+      "type": "fixed",
+      "parent": "body",
+      "child": "front_rail",
+      "xyz": [
+        0.223,
+        0.0,
+        0.0805
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_rail_joint",
+      "type": "fixed",
+      "parent": "body",
+      "child": "rear_rail",
+      "xyz": [
+        -0.223,
+        0.0,
+        0.0805
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_left_hip_x",
+      "type": "revolute",
+      "parent": "body",
+      "child": "front_left_hip",
+      "xyz": [
+        0.29785,
+        0.055,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_left_hip_y",
+      "type": "revolute",
+      "parent": "front_left_hip",
+      "child": "front_left_upper_leg",
+      "xyz": [
+        0.0,
+        0.110945,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_left_knee",
+      "type": "revolute",
+      "parent": "front_left_upper_leg",
+      "child": "front_left_lower_leg",
+      "xyz": [
+        0.025,
+        0.0,
+        -0.3205
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_right_hip_x",
+      "type": "revolute",
+      "parent": "body",
+      "child": "front_right_hip",
+      "xyz": [
+        0.29785,
+        -0.055,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_right_hip_y",
+      "type": "revolute",
+      "parent": "front_right_hip",
+      "child": "front_right_upper_leg",
+      "xyz": [
+        0.0,
+        -0.110945,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "front_right_knee",
+      "type": "revolute",
+      "parent": "front_right_upper_leg",
+      "child": "front_right_lower_leg",
+      "xyz": [
+        0.025,
+        0.0,
+        -0.3205
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_left_hip_x",
+      "type": "revolute",
+      "parent": "body",
+      "child": "rear_left_hip",
+      "xyz": [
+        -0.29785,
+        0.055,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_left_hip_y",
+      "type": "revolute",
+      "parent": "rear_left_hip",
+      "child": "rear_left_upper_leg",
+      "xyz": [
+        0.0,
+        0.110945,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_left_knee",
+      "type": "revolute",
+      "parent": "rear_left_upper_leg",
+      "child": "rear_left_lower_leg",
+      "xyz": [
+        0.025,
+        0.0,
+        -0.3205
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_right_hip_x",
+      "type": "revolute",
+      "parent": "body",
+      "child": "rear_right_hip",
+      "xyz": [
+        -0.29785,
+        -0.055,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_right_hip_y",
+      "type": "revolute",
+      "parent": "rear_right_hip",
+      "child": "rear_right_upper_leg",
+      "xyz": [
+        0.0,
+        -0.110945,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_right_knee",
+      "type": "revolute",
+      "parent": "rear_right_upper_leg",
+      "child": "rear_right_lower_leg",
+      "xyz": [
+        0.025,
+        0.0,
+        -0.3205
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_sh0",
+      "type": "revolute",
+      "parent": "body",
+      "child": "arm_link_sh0",
+      "xyz": [
+        0.292,
+        0.0,
+        0.188
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "arm_sh1",
+      "type": "revolute",
+      "parent": "arm_link_sh0",
+      "child": "arm_link_sh1",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_hr0",
+      "type": "fixed",
+      "parent": "arm_link_sh1",
+      "child": "arm_link_hr0",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_el0",
+      "type": "revolute",
+      "parent": "arm_link_hr0",
+      "child": "arm_link_el0",
+      "xyz": [
+        0.3385,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_el1",
+      "type": "revolute",
+      "parent": "arm_link_el0",
+      "child": "arm_link_el1",
+      "xyz": [
+        0.4033,
+        0.0,
+        0.075
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_wr0",
+      "type": "revolute",
+      "parent": "arm_link_el1",
+      "child": "arm_link_wr0",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_wr1",
+      "type": "revolute",
+      "parent": "arm_link_wr0",
+      "child": "arm_link_wr1",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "arm_f1x",
+      "type": "revolute",
+      "parent": "arm_link_wr1",
+      "child": "arm_link_fngr",
+      "xyz": [
+        0.11745,
+        0.0,
+        0.01482
+      ],
+      "rpy": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    }
+  ],
+  "rest_pose": {
+    "arm_sh0": 0.0,
+    "arm_sh1": 0.25,
+    "arm_el0": 1.05,
+    "arm_el1": 0.0,
+    "arm_wr0": 0.0,
+    "arm_wr1": 0.0,
+    "arm_f1x": -0.55
+  },
+  "visual_bounds_q0": {
+    "min_z": -0.6915020000000001,
+    "max_z": 0.302099
+  },
+  "glb_bytes": 15604416
+}
