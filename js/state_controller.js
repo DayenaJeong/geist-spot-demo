@@ -75,6 +75,7 @@ export class StateController {
             switchId: stateName === "AFTER_SWITCH_A" ? "switch_A" : stateName === "AFTER_SWITCH_B" ? "switch_B" : null,
             lampState
         });
+        this.scene.setRobotEditState?.(stateName);
         if (stateName === "INITIAL") this.scene.resetRobotPresentation?.();
         else if (!fromAuto) this.scene.moveRobotTo?.(stateName === "AFTER_SWITCH_A" ? "switch_A" : "switch_B", { duration: 1100 });
         this.graph.render(this.data.objects, state.relations);

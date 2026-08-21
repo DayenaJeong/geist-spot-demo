@@ -188,7 +188,7 @@ export class SceneView {
                 <button type="button" data-action="copy">Copy URL</button>
                 <span data-role="status" aria-live="polite"></span>
             </div>
-            <p>Presentation-only controls. Dragging changes the Spot pose, not the scene or graph.</p>
+            <p>Choose a timeline state, drag the Spot itself, then save keyframes. Presentation-only; scene and graph are unchanged.</p>
         `;
         stage.appendChild(panel);
 
@@ -348,6 +348,17 @@ export class SceneView {
             event.stopPropagation();
         }, true);
         canvas.addEventListener("pointercancel", event => stopDrag(event), true);
+    }
+
+    setRobotEditState(stateName) {
+        if (!this.robotPoseEditor) return;
+        const poseName = stateName === "AFTER_SWITCH_A" ? "switch_A" : stateName === "AFTER_SWITCH_B" ? "switch_B" : "start";
+        this.robotPoseEditor.selectedPose = poseName;
+        this.robotPoseEditor.poseButtons.forEach(button => button.classList.toggle("is-active", button.dataset.pose === poseName));
+        const ready = this.robotActor.selectEditablePose(poseName);
+        if (this.robotPoseEditor.status) this.robotPoseEditor.status.textContent = ready
+            ? `editing ${poseName === "start" ? "Initial" : poseName === "switch_A" ? "Switch A" : "Switch B"} · drag the robot`
+            : "waiting for scene";
     }
 
     async loadManifest(manifest) {
