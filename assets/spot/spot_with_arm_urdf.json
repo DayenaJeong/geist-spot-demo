@@ -520,8 +520,8 @@
   ],
   "rest_pose": {
     "arm_sh0": 0.0,
-    "arm_sh1": 0.25,
-    "arm_el0": 1.05,
+    "arm_sh1": -1.4,
+    "arm_el0": 2.0,
     "arm_el1": 0.0,
     "arm_wr0": 0.0,
     "arm_wr1": 0.0,

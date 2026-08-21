@@ -22,8 +22,10 @@ const JOINT_AXES = {
 
 const REST_ARM_POSE = {
     arm_sh0: 0.0,
-    arm_sh1: 0.25,
-    arm_el0: 1.05,
+    // Raised, bent presentation pose: the shoulder sits above the body and
+    // the forearm points forward instead of hanging toward the floor.
+    arm_sh1: -1.40,
+    arm_el0: 2.00,
     arm_el1: 0.0,
     arm_wr0: 0.0,
     arm_wr1: 0.0,
@@ -32,8 +34,10 @@ const REST_ARM_POSE = {
 
 const PRESS_ARM_POSE = {
     arm_sh0: 0.0,
-    arm_sh1: 0.18,
-    arm_el0: 1.10,
+    // Lower the forearm slightly toward the switch while retaining the
+    // recognizable raised Spot Arm silhouette.
+    arm_sh1: -1.20,
+    arm_el0: 2.05,
     arm_el1: 0.0,
     arm_wr0: 0.0,
     arm_wr1: 0.0,
