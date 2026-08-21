@@ -110,6 +110,10 @@ function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
 }
 
+function wrapAngle(value) {
+    return Math.atan2(Math.sin(value), Math.cos(value));
+}
+
 function easeInOut(value) {
     const t = clamp(value, 0, 1);
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -160,6 +164,7 @@ export class RobotActor {
         this.activeTargetId = null;
         this.motion = null;
         this.pressAnimation = null;
+        this.activePressArmPose = null;
         this.motionResolve = null;
         this.currentPose = null;
         this.yawOffsetRad = ACTIVE_ROBOT_TUNING.yawOffsetRad;
@@ -227,8 +232,9 @@ export class RobotActor {
 
     interpolateArmPose(amount) {
         const pose = {};
+        const targetPose = this.activePressArmPose || this.pressArmPose;
         Object.keys(this.restArmPose).forEach(name => {
-            pose[name] = THREE.MathUtils.lerp(this.restArmPose[name], this.pressArmPose[name], amount);
+            pose[name] = THREE.MathUtils.lerp(this.restArmPose[name], targetPose[name], amount);
         });
         return pose;
     }
@@ -409,6 +415,7 @@ export class RobotActor {
         this.motionResolve = null;
         this.motion = null;
         this.pressAnimation = null;
+        this.activePressArmPose = null;
         this.applyArmPose(this.restArmPose);
     }
 
@@ -445,6 +452,24 @@ export class RobotActor {
         if (!this.configured || !this.modelReady) return Promise.resolve(false);
         this.setTarget(targetName);
         this.cancelAnimation();
+        const pressPoint = this.pressPoints[targetName];
+        const targetDirection = pressPoint ? pressPoint.clone().sub(this.root.position) : null;
+        let armYaw = this.pressArmPose.arm_sh0;
+        if (targetDirection) {
+            targetDirection.y = 0;
+            if (targetDirection.lengthSq() > 1e-6) {
+                targetDirection.normalize();
+                armYaw = wrapAngle(Math.atan2(targetDirection.x, targetDirection.z) - this.root.rotation.y);
+            }
+        }
+        // Keep the shoulder and elbow pitch level, while yawing the arm toward
+        // the actual switch center.  The body and head remain fixed.
+        this.activePressArmPose = {
+            ...this.pressArmPose,
+            arm_sh0: armYaw,
+            arm_sh1: 0.0,
+            arm_el0: 0.0
+        };
         this.pressAnimation = {
             started: performance.now(),
             duration: Math.max(Number(duration) || 1, 1)
@@ -489,6 +514,7 @@ export class RobotActor {
             this.applyArmPose(this.interpolateArmPose(amount));
             if (progress >= 1) {
                 this.applyArmPose(this.restArmPose);
+                this.activePressArmPose = null;
                 this.pressAnimation = null;
                 const resolve = this.motionResolve;
                 this.motionResolve = null;
