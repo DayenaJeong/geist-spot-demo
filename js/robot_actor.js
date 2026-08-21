@@ -9,6 +9,9 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const ROS_TO_THREE = new THREE.Quaternion(-0.5, -0.5, -0.5, 0.5);
 const UP = new THREE.Vector3(0, 1, 0);
 const SPOT_BODY_LENGTH = 0.87244;
+// The rendered assembly presents the body forward axis with this yaw offset.
+// Keep the arm mount and the body aimed at the active switch.
+const MODEL_FORWARD_YAW_OFFSET = -Math.PI / 2;
 
 const JOINT_AXES = {
     arm_sh0: new THREE.Vector3(0, 0, 1),
@@ -34,10 +37,10 @@ const REST_ARM_POSE = {
 
 const PRESS_ARM_POSE = {
     arm_sh0: 0.0,
-    // Lower the forearm slightly toward the switch while retaining the
-    // recognizable raised Spot Arm silhouette.
-    arm_sh1: -1.20,
-    arm_el0: 2.05,
+    // Extend the forearm toward the switch while keeping the gripper level
+    // with the raised presentation pose.
+    arm_sh1: -0.80,
+    arm_el0: 1.22,
     arm_el1: 0.0,
     arm_wr0: 0.0,
     arm_wr1: 0.0,
@@ -207,7 +210,7 @@ export class RobotActor {
             direction.normalize();
             return {
                 position: ground,
-                yaw: Math.atan2(direction.x, direction.z)
+                yaw: Math.atan2(direction.x, direction.z) + MODEL_FORWARD_YAW_OFFSET
             };
         };
 
