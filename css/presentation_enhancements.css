@@ -481,6 +481,54 @@ body[data-presentation-mode="true"] .scene-debug-overlay {
     }
 }
 
+
+/* Refined graph treatment: quiet canvas, deliberate hierarchy, and state-led
+   relation styling while preserving the existing interactive graph behavior. */
+.graph-panel {
+    border-color: #c8d8e3;
+    box-shadow: 0 8px 26px rgba(21, 48, 71, 0.10);
+}
+
+.graph-panel .panel-heading {
+    background: linear-gradient(105deg, #f5fafe 0%, #ffffff 72%);
+    border-bottom-color: #d5e3eb;
+}
+
+.graph-panel .panel-heading::before {
+    content: "";
+    width: 3px;
+    align-self: stretch;
+    flex: 0 0 3px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #2b78ad 0%, #7ab0cb 100%);
+}
+
+.graph-panel .panel-heading > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.graph-panel .network-container {
+    position: relative;
+    background-color: #fbfdfe;
+    background-image:
+        radial-gradient(circle at 1px 1px, rgba(64, 112, 143, 0.10) 1px, transparent 1.2px),
+        linear-gradient(135deg, rgba(232, 241, 248, 0.42), rgba(255, 255, 255, 0.16));
+    background-size: 22px 22px, 100% 100%;
+}
+
+.graph-panel .network-container::after {
+    content: "CANDIDATE RELATIONS";
+    position: absolute;
+    right: 13px;
+    bottom: 10px;
+    color: rgba(82, 104, 121, 0.62);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    pointer-events: none;
+}
+
 /* Mobile presentation layout: keep the graph, 3D scene, controls, and evidence
    readable and scrollable instead of preserving the desktop viewport crop. */
 @media (max-width: 700px) {

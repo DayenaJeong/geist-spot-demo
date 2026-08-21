@@ -111,8 +111,31 @@ const JOINT_AXES = {
     arm_el1: new THREE.Vector3(1, 0, 0),
     arm_wr0: new THREE.Vector3(0, 1, 0),
     arm_wr1: new THREE.Vector3(1, 0, 0),
-    arm_f1x: new THREE.Vector3(0, 1, 0)
+    arm_f1x: new THREE.Vector3(0, 1, 0),
+    front_left_hip_x: new THREE.Vector3(1, 0, 0),
+    front_left_hip_y: new THREE.Vector3(0, 1, 0),
+    front_left_knee: new THREE.Vector3(0, 1, 0),
+    front_right_hip_x: new THREE.Vector3(1, 0, 0),
+    front_right_hip_y: new THREE.Vector3(0, 1, 0),
+    front_right_knee: new THREE.Vector3(0, 1, 0),
+    rear_left_hip_x: new THREE.Vector3(1, 0, 0),
+    rear_left_hip_y: new THREE.Vector3(0, 1, 0),
+    rear_left_knee: new THREE.Vector3(0, 1, 0),
+    rear_right_hip_x: new THREE.Vector3(1, 0, 0),
+    rear_right_hip_y: new THREE.Vector3(0, 1, 0),
+    rear_right_knee: new THREE.Vector3(0, 1, 0)
 };
+
+const ARM_JOINT_NAMES = [
+    "arm_sh0", "arm_sh1", "arm_el0", "arm_el1", "arm_wr0", "arm_wr1", "arm_f1x"
+];
+
+const GAIT_LEGS = [
+    { prefix: "front_left", phase: 0 },
+    { prefix: "front_right", phase: Math.PI },
+    { prefix: "rear_left", phase: Math.PI },
+    { prefix: "rear_right", phase: 0 }
+];
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -163,6 +186,8 @@ export class RobotActor {
         this.loader = new GLTFLoader();
         this.modelRoot = null;
         this.joints = new Map();
+        this.legRestQuaternions = new Map();
+        this.gaitQuaternion = new THREE.Quaternion();
         this.modelReady = false;
         this.loadError = null;
         this.configured = false;
@@ -212,6 +237,14 @@ export class RobotActor {
                     if (!object.name || !JOINT_AXES[object.name]) return;
                     this.joints.set(object.name, object);
                 });
+                GAIT_LEGS.forEach(({ prefix }) => {
+                    ["hip_x", "hip_y", "knee"].forEach(part => {
+                        const name = `${prefix}_${part}`;
+                        const joint = this.joints.get(name);
+                        if (joint) this.legRestQuaternions.set(name, joint.quaternion.clone());
+                    });
+                });
+                this.resetLegPose();
                 this.modelReady = true;
                 this.applyArmPose(this.restArmPose);
                 this.updateVisibility();
@@ -230,11 +263,42 @@ export class RobotActor {
     }
 
     applyArmPose(pose) {
-        Object.entries(JOINT_AXES).forEach(([name, axis]) => {
+        ARM_JOINT_NAMES.forEach(name => {
+            const axis = JOINT_AXES[name];
             const joint = this.joints.get(name);
-            if (!joint) return;
+            if (!joint || !axis) return;
             const angle = Number(pose[name] ?? 0);
             joint.quaternion.setFromAxisAngle(axis, angle);
+        });
+    }
+
+    resetLegPose() {
+        this.legRestQuaternions.forEach((quaternion, name) => {
+            const joint = this.joints.get(name);
+            if (joint) joint.quaternion.copy(quaternion);
+        });
+    }
+
+    setLegJointOffset(name, angle) {
+        const joint = this.joints.get(name);
+        const axis = JOINT_AXES[name];
+        const rest = this.legRestQuaternions.get(name);
+        if (!joint || !axis || !rest) return;
+        this.gaitQuaternion.setFromAxisAngle(axis, angle);
+        joint.quaternion.copy(rest).multiply(this.gaitQuaternion);
+    }
+
+    applyWalkingGait(phase) {
+        GAIT_LEGS.forEach(({ prefix, phase: legOffset }) => {
+            const legPhase = phase + legOffset;
+            const stride = Math.sin(legPhase);
+            const lift = Math.max(0, Math.sin(legPhase));
+            // Diagonal-pair gait: hip swing, small lateral roll, and a
+            // restrained knee lift make the saved Spot mesh visibly walk
+            // while the root follows its presentation path.
+            this.setLegJointOffset(`${prefix}_hip_x`, Math.cos(legPhase) * 0.045);
+            this.setLegJointOffset(`${prefix}_hip_y`, stride * 0.24);
+            this.setLegJointOffset(`${prefix}_knee`, -lift * 0.28);
         });
     }
 
@@ -425,6 +489,7 @@ export class RobotActor {
         this.pressAnimation = null;
         this.activePressArmPose = null;
         this.applyArmPose(this.restArmPose);
+        this.resetLegPose();
     }
 
     moveTo(targetName, { duration = 1200 } = {}) {
@@ -443,11 +508,13 @@ export class RobotActor {
             this.root.position.copy(end.position);
             this.root.rotation.y = end.yaw;
             this.currentPose = clonePose(end);
+            this.resetLegPose();
             return Promise.resolve(true);
         }
         this.motion = {
             started: performance.now(),
             duration: Math.max(Number(duration) || 1, 1),
+            gaitCycles: Math.max(1.35, Math.max(Number(duration) || 1, 1) / 680),
             start,
             end
         };
@@ -495,12 +562,14 @@ export class RobotActor {
             const progress = Math.min((now - animation.started) / animation.duration, 1);
             const eased = easeInOut(progress);
             this.root.position.lerpVectors(animation.start.position, animation.end.position, eased);
-            this.root.position.y += Math.sin(progress * Math.PI) * 0.018 * this.robotScale;
+            this.root.position.y += Math.sin(progress * Math.PI) * 0.014 * this.robotScale;
             this.root.rotation.y = THREE.MathUtils.lerp(animation.start.yaw, animation.end.yaw, eased);
+            this.applyWalkingGait(eased * animation.gaitCycles * Math.PI * 2);
             if (progress >= 1) {
                 this.root.position.copy(animation.end.position);
                 this.root.rotation.y = animation.end.yaw;
                 this.currentPose = clonePose(animation.end);
+                this.resetLegPose();
                 const resolve = this.motionResolve;
                 this.motionResolve = null;
                 this.motion = null;

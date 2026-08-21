@@ -1,12 +1,29 @@
 // Interactive vis-network scene-graph renderer.
 
-const NODE_COLORS = {
-    background: "#e8f1f8",
-    border: "#1f5a85",
-    highlight: {
-        background: "#cfe5f5",
-        border: "#0d426a"
+const NODE_PALETTES = {
+    switch: {
+        background: "#f7fbfe",
+        border: "#4d86ad",
+        highlight: { background: "#e2f0f8", border: "#1f5d84" }
+    },
+    lamp: {
+        background: "#fffaf0",
+        border: "#b58a37",
+        highlight: { background: "#fff1c9", border: "#8f6a22" }
+    },
+    default: {
+        background: "#f7fafc",
+        border: "#7a8d9b",
+        highlight: { background: "#e9f0f4", border: "#425b6c" }
     }
+};
+
+const NODE_SHADOW = {
+    enabled: true,
+    color: "rgba(21, 48, 71, 0.16)",
+    size: 9,
+    x: 0,
+    y: 4
 };
 
 export class GraphView {
@@ -38,13 +55,18 @@ export class GraphView {
             id: object.id,
             label: object.label,
             title: `${object.label} · ${object.type || "object"}`,
+            level: object.type === "lamp" ? 1 : 0,
             shape: "box",
-            margin: 13,
-            color: NODE_COLORS,
+            margin: { top: 12, right: 18, bottom: 12, left: 18 },
+            borderWidth: 1.5,
+            shapeProperties: { borderRadius: 11 },
+            shadow: NODE_SHADOW,
+            color: NODE_PALETTES[object.type] || NODE_PALETTES.default,
             font: {
-                face: "Arial",
-                size: 17,
-                color: "#16334a"
+                face: "Segoe UI, Arial, sans-serif",
+                size: 16,
+                color: "#17364d",
+                bold: { color: "#123d5a", size: 16, face: "Segoe UI, Arial, sans-serif" }
             }
         }));
 
@@ -64,19 +86,20 @@ export class GraphView {
             to: relation.target,
             relationState: relation.state,
             interaction: relation.relation,
-            smooth: { type: "continuous" },
+            smooth: { type: "cubicBezier", forceDirection: "horizontal", roundness: 0.28 },
             font: {
-                face: "Arial",
-                size: 14,
+                face: "Segoe UI, Arial, sans-serif",
+                size: 12,
                 align: "middle",
-                strokeWidth: 0
+                strokeWidth: 0,
+                color: "#526879"
             }
         };
 
         if (relation.state === "removed") {
             return {
                 ...common,
-                label: "×  REMOVED",
+                label: "REMOVED",
                 title: "Relation removed: no observable lamp-state change",
                 color: { color: "#b9c0c8", highlight: "#ad5e68" },
                 font: { ...common.font, color: "#9b4d58", background: "#f7f8fa" },
@@ -89,7 +112,7 @@ export class GraphView {
         if (relation.state === "verified") {
             return {
                 ...common,
-                label: `${relation.relation}\nVERIFIED`,
+                label: `${relation.relation}  ·  VERIFIED`,
                 title: "Verified: successful press caused Lamp OFF -> ON",
                 color: { color: "#25834f", highlight: "#16653b" },
                 font: { ...common.font, color: "#207346", background: "#f4fbf6" },
@@ -101,7 +124,7 @@ export class GraphView {
 
         return {
             ...common,
-            label: `${relation.relation} ?`,
+            label: `${relation.relation}  ·  CANDIDATE`,
             title: "Candidate relation awaiting physical verification",
             color: { color: "#2b78ad", highlight: "#15557f" },
             font: { ...common.font, color: "#23658e" },
@@ -167,18 +190,33 @@ export class GraphView {
 
     networkOptions() {
         return {
-            layout: { improvedLayout: true, hierarchical: { enabled: false } },
-            nodes: { shape: "box", borderWidth: 1.5, shadow: false },
+            layout: {
+                improvedLayout: true,
+                hierarchical: {
+                    enabled: true,
+                    direction: "LR",
+                    sortMethod: "directed",
+                    levelSeparation: 170,
+                    nodeSpacing: 110,
+                    treeSpacing: 140
+                }
+            },
+            nodes: {
+                shape: "box",
+                borderWidth: 1.5,
+                shadow: NODE_SHADOW,
+                chosen: true
+            },
             edges: {
-                arrows: { to: { enabled: true, scaleFactor: 0.8 } },
-                smooth: { type: "continuous" },
-                selectionWidth: 1.5
+                arrows: { to: { enabled: true, scaleFactor: 0.72 } },
+                smooth: { type: "cubicBezier", forceDirection: "horizontal", roundness: 0.28 },
+                selectionWidth: 2,
+                hoverWidth: 1.2,
+                arrowStrikethrough: false
             },
             physics: {
-                enabled: true,
-                solver: "barnesHut",
-                barnesHut: { springLength: 150, springConstant: 0.018, damping: 0.24, avoidOverlap: 0.2 },
-                stabilization: { iterations: 120 }
+                enabled: false,
+                stabilization: { iterations: 0 }
             },
             interaction: {
                 hover: true,
