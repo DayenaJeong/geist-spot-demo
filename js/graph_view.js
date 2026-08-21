@@ -41,6 +41,16 @@ export class GraphView {
             nodes: this.nodes,
             edges: this.edges
         }, this.networkOptions());
+        this.relationLabelLayer = document.createElement("div");
+        this.relationLabelLayer.className = "relation-label-layer";
+        this.relationLabelLayer.setAttribute("aria-hidden", "true");
+        this.container.appendChild(this.relationLabelLayer);
+        this.relationLabelElements = new Map();
+
+        this.network.on("afterDrawing", () => this.positionRelationLabels());
+        this.network.on("zoom", () => this.positionRelationLabels());
+        this.network.on("dragEnd", () => this.positionRelationLabels());
+        this.network.on("resize", () => this.positionRelationLabels());
 
         this.network.on("click", params => {
             const nodeId = params.nodes.length > 0 ? String(params.nodes[0]) : null;
@@ -76,11 +86,49 @@ export class GraphView {
         this.edges.clear();
         this.nodes.add(nodeData);
         this.edges.add(edgeData);
+        this.renderRelationLabels(edgeData);
         this.network.fit({ animation: { duration: 350, easingFunction: "easeInOutQuad" } });
     }
 
+    renderRelationLabels(edgeData) {
+        this.relationLabelElements.clear();
+        this.relationLabelLayer.replaceChildren();
+        edgeData.forEach(edge => {
+            if (!edge.displayLabel) return;
+            const element = document.createElement("span");
+            element.className = `relation-label relation-label-${edge.relationState || "candidate"}`;
+            element.textContent = edge.displayLabel;
+            this.relationLabelLayer.appendChild(element);
+            this.relationLabelElements.set(edge.id, element);
+        });
+        this.positionRelationLabels();
+    }
+
+    positionRelationLabels() {
+        if (!this.network || !this.relationLabelElements) return;
+        for (const edge of this.edgeStyles.values()) {
+            const element = this.relationLabelElements.get(edge.id);
+            if (!element) continue;
+            const positions = this.network.getPositions([edge.from, edge.to]);
+            const from = positions[edge.from];
+            const to = positions[edge.to];
+            if (!from || !to) {
+                element.hidden = true;
+                continue;
+            }
+            const midpoint = {
+                x: (from.x + to.x) / 2,
+                y: (from.y + to.y) / 2
+            };
+            const domPoint = this.network.canvasToDOM(midpoint);
+            const offset = edge.relationState === "removed" ? -20 : 20;
+            element.hidden = false;
+            element.style.left = `${domPoint.x}px`;
+            element.style.top = `${domPoint.y + offset}px`;
+        }
+    }
+
     styleRelation(relation) {
-        const labelLift = relation.state === "removed" ? -24 : 24;
         const common = {
             id: relation.id,
             from: relation.source,
@@ -92,7 +140,6 @@ export class GraphView {
                 face: "Segoe UI, Arial, sans-serif",
                 size: 12,
                 align: "horizontal",
-                vadjust: labelLift,
                 strokeWidth: 0,
                 color: "#526879",
                 background: "none"
@@ -102,7 +149,8 @@ export class GraphView {
         if (relation.state === "removed") {
             return {
                 ...common,
-                label: "removed",
+                label: "",
+                displayLabel: "removed",
                 title: "Relation removed: no observable lamp-state change",
                 color: { color: "#b9c0c8", highlight: "#ad5e68" },
                 font: { ...common.font, color: "#9b4d58", background: "none" },
@@ -115,7 +163,8 @@ export class GraphView {
         if (relation.state === "verified") {
             return {
                 ...common,
-                label: `${relation.relation}  ·  verified`,
+                label: "",
+                displayLabel: `${relation.relation}  ·  verified`,
                 title: "Verified: successful press caused Lamp OFF -> ON",
                 color: { color: "#25834f", highlight: "#16653b" },
                 font: { ...common.font, color: "#207346", background: "none" },
@@ -127,7 +176,8 @@ export class GraphView {
 
         return {
             ...common,
-            label: relation.relation,
+            label: "",
+            displayLabel: relation.relation,
             title: "Candidate relation awaiting physical verification",
             color: { color: "#2b78ad", highlight: "#15557f" },
             font: { ...common.font, color: "#23658e", background: "none" },
