@@ -93,8 +93,8 @@ export class GraphView {
             smooth: curve,
             font: {
                 face: "Segoe UI, Arial, sans-serif",
-                size: 12,
-                align: "middle",
+                size: 11,
+                align: "horizontal",
                 vadjust: labelLift,
                 strokeWidth: 0,
                 color: "#526879",
@@ -105,7 +105,7 @@ export class GraphView {
         if (relation.state === "removed") {
             return {
                 ...common,
-                label: "REMOVED",
+                label: "removed",
                 title: "Relation removed: no observable lamp-state change",
                 color: { color: "#b9c0c8", highlight: "#ad5e68" },
                 font: { ...common.font, color: "#9b4d58", background: "#fffafb" },
@@ -118,7 +118,7 @@ export class GraphView {
         if (relation.state === "verified") {
             return {
                 ...common,
-                label: `${relation.relation}  ·  VERIFIED`,
+                label: `${relation.relation}  ·  verified`,
                 title: "Verified: successful press caused Lamp OFF -> ON",
                 color: { color: "#25834f", highlight: "#16653b" },
                 font: { ...common.font, color: "#207346", background: "#f5fcf7" },
@@ -130,7 +130,7 @@ export class GraphView {
 
         return {
             ...common,
-            label: `${relation.relation}  ·  CANDIDATE`,
+            label: relation.relation,
             title: "Candidate relation awaiting physical verification",
             color: { color: "#2b78ad", highlight: "#15557f" },
             font: { ...common.font, color: "#23658e", background: "#f7fbfe" },

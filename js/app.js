@@ -2,7 +2,7 @@
 // Graph and 3D rendering use a standalone Three.js scene explorer.
 
 import { loadDemoData, loadEvidenceManifest, loadSceneManifest } from "./data_adapter.js";
-import { GraphView } from "./graph_view.js?v=graph-polish-r9-20260821";
+import { GraphView } from "./graph_view.js?v=graph-polish-r10-20260821";
 import { SceneView } from "./scene_view.js?v=presentation-polish-20260818-spot-root-canonical-r6-20260821";
 import { StateController } from "./state_controller.js?v=presentation-polish-20260818-spot-root-canonical-r6-20260821";
 import { setupAnnotationMode } from "./annotation_mode.js";
