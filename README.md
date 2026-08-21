@@ -55,3 +55,9 @@ The panel also exposes Position X and Position Z offsets in scene meters.
 Press `Save pose` to store all seven values in this browser; the saved pose
 is restored on the next `?tune=1` visit. `Copy URL` creates a shareable pose
 that takes precedence over the browser-saved pose.
+
+For keyframe editing, choose `Initial`, `Switch A`, or `Switch B` in the panel,
+then click and drag the visible Spot body in the 3D view. `Save keyframes`
+stores all three positions in this browser. The press animation keeps the body position fixed and moves only the
+arm/gripper a short distance toward the switch before returning; it remains a
+presentation-only animation.

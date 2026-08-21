@@ -165,7 +165,13 @@ export class SceneView {
         panel.innerHTML = `
             <div class="robot-tuning-heading">
                 <strong>SPOT POSE TUNING</strong>
-                <span>drag sliders</span>
+                <span>click + drag robot</span>
+            </div>
+            <div class="robot-keyframe-controls" role="group" aria-label="Select robot keyframe to edit">
+                <span>Drag robot for:</span>
+                <button type="button" data-pose="start" class="is-active">Initial</button>
+                <button type="button" data-pose="switch_A">Switch A</button>
+                <button type="button" data-pose="switch_B">Switch B</button>
             </div>
             <div class="robot-tuning-grid">
                 <label>Body yaw <output data-value="yaw"></output><input data-tuning="yaw" type="range" min="-180" max="180" step="1"></label>
@@ -178,7 +184,7 @@ export class SceneView {
             </div>
             <div class="robot-tuning-actions">
                 <button type="button" data-action="reset">Reset</button>
-                <button type="button" data-action="save">Save pose</button>
+                <button type="button" data-action="save">Save keyframes</button>
                 <button type="button" data-action="copy">Copy URL</button>
                 <span data-role="status" aria-live="polite"></span>
             </div>
@@ -190,6 +196,17 @@ export class SceneView {
         const inputs = Object.fromEntries([...panel.querySelectorAll("[data-tuning]")].map(input => [input.dataset.tuning, input]));
         const outputs = Object.fromEntries([...panel.querySelectorAll("[data-value]")].map(output => [output.dataset.value, output]));
         const status = panel.querySelector("[data-role=\"status\"]");
+        const poseButtons = [...panel.querySelectorAll("[data-pose]")];
+        const poseLabels = { start: "Initial", switch_A: "Switch A", switch_B: "Switch B" };
+        this.robotPoseEditor = { selectedPose: "start", status, poseButtons };
+        const selectPoseForEditing = name => {
+            const poseName = Object.hasOwn(poseLabels, name) ? name : "start";
+            this.robotPoseEditor.selectedPose = poseName;
+            poseButtons.forEach(button => button.classList.toggle("is-active", button.dataset.pose === poseName));
+            const ready = this.robotActor.selectEditablePose(poseName);
+            status.textContent = ready ? `editing ${poseLabels[poseName]} · drag the robot` : "waiting for scene";
+        };
+        poseButtons.forEach(button => button.addEventListener("click", () => selectPoseForEditing(button.dataset.pose)));
 
         const setInputValues = tuning => {
             inputs.yaw.value = Math.round(tuning.yawOffsetDeg);
@@ -262,9 +279,10 @@ export class SceneView {
                     robotRestSh1: THREE.MathUtils.degToRad(values.restSh1),
                     robotRestEl0: THREE.MathUtils.degToRad(values.restEl0),
                     robotPressSh1: THREE.MathUtils.degToRad(values.pressSh1),
-                    robotPressEl0: THREE.MathUtils.degToRad(values.pressEl0)
+                    robotPressEl0: THREE.MathUtils.degToRad(values.pressEl0),
+                    posePositions: this.robotActor.getManualPosePositions()
                 }));
-                status.textContent = "saved in this browser";
+                status.textContent = "keyframes saved in this browser";
             } catch {
                 status.textContent = "save unavailable";
             }
@@ -280,6 +298,56 @@ export class SceneView {
 
         setInputValues(this.robotActor.getTuning());
         updateLabels(readValues());
+        this.installRobotPoseDragHandlers();
+    }
+
+    installRobotPoseDragHandlers() {
+        if (this.robotPoseDragHandlersInstalled || !this.renderer) return;
+        this.robotPoseDragHandlersInstalled = true;
+        const canvas = this.renderer.domElement;
+        const stopDrag = event => {
+            if (!this.robotPoseDrag) return;
+            this.robotPoseDrag = null;
+            if (event?.pointerId !== undefined && canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+            this.setOrbitEnabled(true);
+            canvas.style.cursor = "grab";
+            if (this.robotPoseEditor?.status) this.robotPoseEditor.status.textContent = "dragged · press Save keyframes";
+        };
+        canvas.addEventListener("pointerdown", event => {
+            if (event.button !== 0 || !this.robotActor.root.visible || !this.robotActor.modelReady) return;
+            const raycaster = this.makeRaycaster(event.clientX, event.clientY);
+            const hit = raycaster.intersectObject(this.robotActor.root, true)[0];
+            if (!hit) return;
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.robotActor.floorY);
+            const point = raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+            if (!point) return;
+            const offset = this.robotActor.root.position.clone().sub(point);
+            offset.y = 0;
+            this.robotPoseDrag = { plane, offset, pointerId: event.pointerId };
+            canvas.setPointerCapture?.(event.pointerId);
+            this.setOrbitEnabled(false);
+            canvas.style.cursor = "grabbing";
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+        canvas.addEventListener("pointermove", event => {
+            if (!this.robotPoseDrag) return;
+            const raycaster = this.makeRaycaster(event.clientX, event.clientY);
+            const point = raycaster.ray.intersectPlane(this.robotPoseDrag.plane, new THREE.Vector3());
+            if (!point) return;
+            point.add(this.robotPoseDrag.offset);
+            point.y = this.robotActor.floorY;
+            this.robotActor.setEditablePosePosition(this.robotPoseEditor?.selectedPose || "start", point);
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+        canvas.addEventListener("pointerup", event => {
+            if (!this.robotPoseDrag) return;
+            stopDrag(event);
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+        canvas.addEventListener("pointercancel", event => stopDrag(event), true);
     }
 
     async loadManifest(manifest) {
@@ -305,6 +373,7 @@ export class SceneView {
         this.applyLampStateVisual();
         this.updateWorldMetrics();
         this.robotActor.configure({ objectEntries: this.objectEntries, floorY: this.worldMetrics.floorY });
+        if (this.robotPoseEditor) this.robotActor.selectEditablePose(this.robotPoseEditor.selectedPose);
 
         if (!this.hasPointCloud) {
             this.setSceneState("failed");

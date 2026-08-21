@@ -311,6 +311,8 @@ body[data-presentation-mode="true"] .scene-debug-overlay {
     display: grid;
     gap: 8px;
     width: min(292px, calc(100% - 24px));
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
     padding: 11px 12px 10px;
     border: 1px solid rgba(21, 61, 90, 0.28);
     border-radius: 8px;
@@ -407,4 +409,38 @@ body[data-presentation-mode="true"] .scene-debug-overlay {
         left: 8px;
         width: min(270px, calc(100% - 16px));
     }
+}
+
+.robot-keyframe-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    color: var(--ink-soft);
+    font-size: 10px;
+}
+
+.robot-keyframe-controls > span {
+    flex-basis: 100%;
+    margin-bottom: 1px;
+}
+
+.robot-keyframe-controls button {
+    min-height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 7px;
+    color: var(--navy);
+    background: var(--surface);
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.robot-keyframe-controls button:hover,
+.robot-keyframe-controls button:focus-visible,
+.robot-keyframe-controls button.is-active {
+    border-color: var(--blue);
+    color: #ffffff;
+    background: var(--blue);
+    outline: none;
 }

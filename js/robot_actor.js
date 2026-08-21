@@ -18,8 +18,8 @@ const EDITABLE_ROBOT_TUNING = {
     yawOffsetDeg: 0,
     restArmPose: {
         arm_sh0: 0.0,
-        arm_sh1: -1.40,
-        arm_el0: 2.00,
+        arm_sh1: 0.0524,
+        arm_el0: 0.0349,
         arm_el1: 0.0,
         arm_wr0: 0.0,
         arm_wr1: 0.0,
@@ -27,8 +27,8 @@ const EDITABLE_ROBOT_TUNING = {
     },
     pressArmPose: {
         arm_sh0: 0.0,
-        arm_sh1: -0.80,
-        arm_el0: 1.22,
+        arm_sh1: -0.5061,
+        arm_el0: 0.5760,
         arm_el1: 0.0,
         arm_wr0: 0.0,
         arm_wr1: 0.0,
@@ -54,6 +54,12 @@ function readRobotTuning() {
         const savedValue = Number(saved?.[key]);
         return Number.isFinite(savedValue) ? savedValue : fallback;
     };
+    const savedPosePosition = name => {
+        const value = saved?.posePositions?.[name];
+        return Array.isArray(value) && value.length === 3 && value.every(item => Number.isFinite(Number(item)))
+            ? value.map(Number)
+            : null;
+    };
     return {
         yawOffsetRad: THREE.MathUtils.degToRad(number("robotYawDeg", EDITABLE_ROBOT_TUNING.yawOffsetDeg)),
         restArmPose: {
@@ -67,7 +73,12 @@ function readRobotTuning() {
             arm_el0: number("robotPressEl0", EDITABLE_ROBOT_TUNING.pressArmPose.arm_el0)
         },
         positionOffsetX: number("robotOffsetX", EDITABLE_ROBOT_TUNING.positionOffsetX),
-        positionOffsetZ: number("robotOffsetZ", EDITABLE_ROBOT_TUNING.positionOffsetZ)
+        positionOffsetZ: number("robotOffsetZ", EDITABLE_ROBOT_TUNING.positionOffsetZ),
+        manualPosePositions: {
+            start: savedPosePosition("start"),
+            switch_A: savedPosePosition("switch_A"),
+            switch_B: savedPosePosition("switch_B")
+        }
     };
 }
 
@@ -147,6 +158,11 @@ export class RobotActor {
             0,
             ACTIVE_ROBOT_TUNING.positionOffsetZ
         );
+        this.manualPosePositions = {};
+        Object.entries(ACTIVE_ROBOT_TUNING.manualPosePositions || {}).forEach(([name, value]) => {
+            this.manualPosePositions[name] = value ? new THREE.Vector3(...value) : null;
+        });
+        this.pressPoints = {};
 
         this.loadModel();
     }
@@ -213,8 +229,42 @@ export class RobotActor {
             pressSh1: this.pressArmPose.arm_sh1,
             pressEl0: this.pressArmPose.arm_el0,
             offsetX: this.positionOffset.x,
-            offsetZ: this.positionOffset.z
+            offsetZ: this.positionOffset.z,
+            posePositions: this.getManualPosePositions()
         };
+    }
+
+    getManualPosePositions() {
+        return Object.fromEntries(Object.entries(this.manualPosePositions).map(([name, position]) => [
+            name,
+            position ? position.toArray().map(value => Number(value.toFixed(4))) : null
+        ]));
+    }
+
+    selectEditablePose(name) {
+        const poseName = ["start", "switch_A", "switch_B"].includes(name) ? name : "start";
+        this.editablePoseName = poseName;
+        const pose = this.targets[poseName];
+        if (!pose || !this.configured) return false;
+        this.cancelAnimation();
+        this.root.position.copy(pose.position);
+        this.root.rotation.y = pose.yaw;
+        this.currentPose = clonePose(pose);
+        this.applyArmPose(this.restArmPose);
+        return true;
+    }
+
+    setEditablePosePosition(name, position) {
+        const pose = this.targets[name];
+        if (!pose || !position) return false;
+        pose.position.copy(position);
+        pose.position.y = this.floorY;
+        this.manualPosePositions[name] = pose.position.clone();
+        if (this.editablePoseName === name) {
+            this.root.position.copy(pose.position);
+            this.currentPose = clonePose(pose);
+        }
+        return true;
     }
 
     setTuning({ yawOffsetDeg, restSh1, restEl0, pressSh1, pressEl0, offsetX, offsetZ } = {}) {
@@ -298,6 +348,10 @@ export class RobotActor {
         positionOffset.y = 0;
         [startPose, poseA, poseB].forEach(pose => pose.position.add(positionOffset));
         this.targets = { start: startPose, switch_A: poseA, switch_B: poseB };
+        Object.entries(this.manualPosePositions).forEach(([name, position]) => {
+            if (position && this.targets[name]) this.targets[name].position.copy(position);
+        });
+        this.pressPoints = { switch_A: centerA.clone(), switch_B: centerB.clone() };
         this.root.scale.setScalar(this.robotScale);
         this.targetMarker.scale.setScalar(this.robotScale);
         this.root.position.copy(startPose.position);
